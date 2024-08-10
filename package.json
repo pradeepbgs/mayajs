@@ -3,6 +3,7 @@
     "version": "1.0.0",
     "description": "Build your own HTTP-Server challenge, from CodeCrafters",
     "main": "main.js",
+    "type": "module",
     "scripts": {
         "dev": "node app/main.js"
     },
