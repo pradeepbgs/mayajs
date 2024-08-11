@@ -1,6 +1,6 @@
-import Porny from './src/server.js'
+import Maya from './src/server.js'
 
-const app = new Porny()
+const app = new Maya()
 
 
 app.post('/',async (request) =>{

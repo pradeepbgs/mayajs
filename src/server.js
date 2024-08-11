@@ -4,7 +4,7 @@ import { jsonResponse } from "./responseHandler/reshandler.js";
 import { parseRequest } from "./parser/requestParser.js";
 import { errhandler } from "./responseHandler/errResponse.js";
 
-class Porny {
+class Maya {
   constructor() {
     this.routes = {
       GET: {},
@@ -71,4 +71,4 @@ class Porny {
   }
 }
 
-export default Porny;
+export default Maya;
