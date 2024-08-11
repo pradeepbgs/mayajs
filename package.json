@@ -1,18 +1,18 @@
 {
-    "name": "mayajs",  
-    "version": "1.0.3",
-    "description": "A Simple http server library",
-    "main": "src/server.js",
-    "type": "module",
-    "scripts": {
-        "dev": "node app/server.js"
-    },
-    "keywords": [
-        "http",
+  "name": "mayajs",
+  "version": "1.0.1",
+  "description": "A Simple http server library",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node test.js"
+  },
+  "keywords": [
+    "http",
     "server",
     "library"
-    ],
-    "author": "Pradeep sahu",
-    "license": "MIT",
-    "dependencies": {}
+  ],
+  "author": "Pradeep sahu",
+  "license": "MIT",
+  "dependencies": {}
 }

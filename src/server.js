@@ -2,8 +2,7 @@ import net from "net";
 import { handleRequest } from "./requestHandler/requestHandler.js";
 import { jsonResponse } from "./responseHandler/reshandler.js";
 import { parseRequest } from "./parser/requestParser.js";
-import { errhandler } from "./responseHandler/errResponse.js";
-
+import ErrorHandler from "./responseHandler/errResponse.js";
 class Maya {
   constructor() {
     this.routes = {
@@ -22,18 +21,26 @@ class Maya {
 
         if (buffer.includes(Buffer.from("\r\n\r\n"))) {
           const parsedRequest = parseRequest(buffer);
+
+          if (parsedRequest.error) {
+            console.error("Request parsing error:", parsedRequest.error);
+            socket.write(ErrorHandler.badRequest(parsedRequest.error));
+            socket.end();
+            return;
+          }
+
           handleRequest(parsedRequest, this.routes)
             .then((responseData) => {
               if (responseData) {
                 socket.write(responseData);
               } else {
-                socket.write(errhandler());
+                socket.write(ErrorHandler.internalServerError());
               }
               socket.end();
             })
             .catch((err) => {
               console.error("Error handling request:", err);
-              socket.write(errhandler());
+              socket.write(ErrorHandler.internalServerError());
               socket.end();
             });
           buffer = Buffer.alloc(0);
