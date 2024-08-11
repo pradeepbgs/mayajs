@@ -1,8 +1,10 @@
 import net from 'net'
 import { handleRequest } from './requestHandler/requestHandler.js';
+import { jsonResponse } from './responseHandler/reshandler.js';
+import { parseRequest } from './parser/requestParser.js';
+import { errhandler } from './responseHandler/errResponse.js';
 
-
-class porny {
+class Porny {
   constructor (){
     this.routes = {
       GET: {},
@@ -19,9 +21,12 @@ class porny {
         buffer = Buffer.concat([buffer, data]);
         
         if (buffer.includes(Buffer.from('\r\n\r\n'))) {
-          const response  = handleRequest(buffer)
-          if (response) {
-            socket.write(response)
+          const parsedRequest  = parseRequest(buffer)
+          const responseData  = handleRequest(parsedRequest,this.routes)
+          if (responseData) {
+            socket.write(responseData)
+          } else {
+            socket.write(errhandler())
           }
           buffer = Buffer.alloc(0);
           socket.end()
@@ -38,21 +43,7 @@ class porny {
       console.log(`server is running on port ${port}`);
     });
   }
-  handleRequest(buffer) {
-    const { method, path, body, headers } = parseRequest(buffer);
-
-    if (!method || !path) {
-      return 'HTTP/1.1 400 Bad Request\r\n\r\n';
-    }
-
-    const routeHandler = this.routes[method]?.[path];
-    if (routeHandler) {
-      return routeHandler({ method, path, body, headers });
-    }
-
-    return 'HTTP/1.1 404 Not Found\r\n\r\n';
-  }
-
+  
   get(path, handler) {
     this.routes.GET[path] = handler;
   }
@@ -72,7 +63,8 @@ class porny {
   jsonResponse(data, statusCode = 200, statusMessage = 'OK') {
     return jsonResponse(data, statusCode, statusMessage);
   }
+  
 }
 
-export default  porny;
+export default  Porny;
 

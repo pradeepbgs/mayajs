@@ -1,16 +1,18 @@
 {
-    "name": "@codecrafters/build-your-own-http-server",
+    "name": "pornyjs",  
     "version": "1.0.0",
-    "description": "Build your own HTTP-Server challenge, from CodeCrafters",
-    "main": "main.js",
+    "description": "A Simple http server library",
+    "main": "src/server.js",
     "type": "module",
     "scripts": {
-        "dev": "node app/main.js"
+        "dev": "node app/server.js"
     },
     "keywords": [
-        "build-your-own-x"
+        "http",
+    "server",
+    "library"
     ],
-    "author": "",
+    "author": "Pradeep sahu",
     "license": "MIT",
     "dependencies": {}
 }
