@@ -1,50 +1,55 @@
-import net from 'net'
-import { handleRequest } from './requestHandler/requestHandler.js';
-import { jsonResponse } from './responseHandler/reshandler.js';
-import { parseRequest } from './parser/requestParser.js';
-import { errhandler } from './responseHandler/errResponse.js';
+import net from "net";
+import { handleRequest } from "./requestHandler/requestHandler.js";
+import { jsonResponse } from "./responseHandler/reshandler.js";
+import { parseRequest } from "./parser/requestParser.js";
+import { errhandler } from "./responseHandler/errResponse.js";
 
 class Porny {
-  constructor (){
+  constructor() {
     this.routes = {
       GET: {},
       POST: {},
       PUT: {},
-      DELETE: {}
-    }
+      DELETE: {},
+    };
   }
 
-  listen (port = 3000){
+  listen(port = 3000) {
     const server = net.createServer((socket) => {
       let buffer = Buffer.alloc(0);
-      socket.on('data', (data) => {
+      socket.on("data", (data) => {
         buffer = Buffer.concat([buffer, data]);
-        
-        if (buffer.includes(Buffer.from('\r\n\r\n'))) {
-          const parsedRequest  = parseRequest(buffer)
-          const responseData  = handleRequest(parsedRequest,this.routes)
-          console.log('resonse data',responseData)
-          if (responseData) {
-            socket.write(responseData)
-          } else {
-            socket.write(errhandler())
-          }
+
+        if (buffer.includes(Buffer.from("\r\n\r\n"))) {
+          const parsedRequest = parseRequest(buffer);
+          handleRequest(parsedRequest, this.routes)
+            .then((responseData) => {
+              if (responseData) {
+                socket.write(responseData);
+              } else {
+                socket.write(errhandler());
+              }
+              socket.end();
+            })
+            .catch((err) => {
+              console.error("Error handling request:", err);
+              socket.write(errhandler());
+              socket.end();
+            });
           buffer = Buffer.alloc(0);
-          socket.end()
         }
       });
-  
-  
-      socket.on('error',(e)=>{
-          console.log("error on socket: ",e);
-      })
+
+      socket.on("error", (e) => {
+        console.log("error on socket: ", e);
+      });
     });
-  
-    server.listen(port, 'localhost',() => {
+
+    server.listen(port, "localhost", () => {
       console.log(`server is running on port ${port}`);
     });
   }
-  
+
   get(path, handler) {
     this.routes.GET[path] = handler;
   }
@@ -61,11 +66,9 @@ class Porny {
     this.routes.DELETE[path] = handler;
   }
 
-  jsonResponse(data, statusCode = 200, statusMessage = 'OK') {
+  jsonResponse(data, statusCode = 200, statusMessage = "OK") {
     return jsonResponse(data, statusCode, statusMessage);
   }
-  
 }
 
-export default  Porny;
-
+export default Porny;
