@@ -23,6 +23,7 @@ class Porny {
         if (buffer.includes(Buffer.from('\r\n\r\n'))) {
           const parsedRequest  = parseRequest(buffer)
           const responseData  = handleRequest(parsedRequest,this.routes)
+          console.log('resonse data',responseData)
           if (responseData) {
             socket.write(responseData)
           } else {
