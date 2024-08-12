@@ -12,7 +12,7 @@ class Maya {
     };
   }
 
-  listen(port = 3000) {
+  listen(port = 3000, callback) {
     const server = net.createServer((socket) => {
       let buffer = Buffer.alloc(0);
       socket.on("data", (data) => {
@@ -52,7 +52,11 @@ class Maya {
     });
 
     server.listen(port, "localhost", () => {
-      console.log(`server is running on port ${port}`);
+      if (typeof callback === "function") {
+        return callback();
+      } else {
+        console.log(`Server is running on port ${port}`);
+      }
     });
   }
 

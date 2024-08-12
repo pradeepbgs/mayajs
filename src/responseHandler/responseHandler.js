@@ -5,9 +5,10 @@ class ResponseHandler {
     let response = `HTTP/1.1 ${statusCode} ${statusMessage}\r\n`;
     response += `Content-Type: ${contentType}\r\n`;
 
-    // Include any additional headers
-    for (const [key, value] of Object.entries(headers)) {
-      response += `${key}: ${value}\r\n`;
+    if (Object.keys(headers).length > 0) {
+      for (const [key, value] of Object.entries(headers)) {
+        response += `${key}: ${value}\r\n`;
+      }
     }
 
     response += "\r\n"; // End of headers

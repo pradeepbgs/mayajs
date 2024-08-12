@@ -19,34 +19,44 @@ export function parseRequest(requestBuffer) {
     return error({ error: "Invalid request format: Incomplete request line" });
   }
 
-  const [url, queryString] = path.split("?");
+  const [url, queryString] = path.split("?", 2);
   const queryParams = new URLSearchParams(queryString);
 
-  // parse headers
+  // parse headers and cookie
   const headers = {};
+  const Cookies = {};
   for (const line of headerLine) {
     const [key, value] = line.split(": ");
     headers[key.toLowerCase()] = value;
+    if (key === "cookie") {
+      value.split(";").forEach((cookie) => {
+        const [Cookiekey, Cookievalue] = cookie.trim().split("=");
+        Cookies[Cookiekey] = decodeURIComponent(Cookievalue);
+      });
+    }
   }
 
   let parsedBody;
-  try {
-    if (headers["content-type"] === "application/json") {
-      parsedBody = JSON.parse(body);
-    } else if (headers["content-type"] === "application/x-www-form-urlencoded") {
+  const contentType = headers["content-type"];
+  if (body) {
+    if (contentType === "application/json") {
+      try {
+        parsedBody = JSON.parse(body);
+      } catch (error) {
+        return { error: "Invalid JSON format" };
+      }
+    } else if (contentType === "application/x-www-form-urlencoded") {
       parsedBody = Object.fromEntries(new URLSearchParams(body));
     } else {
       parsedBody = body; // Or handle other content types as needed
     }
-  } catch (error) {
-    return { error: "Invalid JSON format" };
   }
 
   const queryParamsObject = {};
   for (const [key, value] of queryParams.entries()) {
     queryParamsObject[key] = value;
   }
-  //
+
   return {
     method,
     path: decodeURIComponent(path),
@@ -54,5 +64,6 @@ export function parseRequest(requestBuffer) {
     headers,
     body: parsedBody,
     query: queryParams,
+    Cookies,
   };
 }
