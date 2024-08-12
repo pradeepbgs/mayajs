@@ -1,8 +1,34 @@
+const getCache = new Map()
+const CACHE_TTL = 10 * 1000;
+const MAX_CACHE_SIZE = 10000; // Maximum number of cache entries
+
+
+function setCache(key,value) {
+  const timeStamp = Date.now()
+  if (getCache.size >= MAX_CACHE_SIZE) {
+    const oldestKey = getCache.keys().next().value;
+    getCache.delete(oldestKey);
+  }
+  getCache.set(key,{value,timeStamp})
+}
+
+function getCached (key) {
+    const cached = getCache.get(key)
+    if (cached && (Date.now() - cached.timeStamp) < CACHE_TTL) {
+      getCache.delete(key);
+    getCache.set(key, cached);
+      return cached;
+    } else {
+      getCache.delete(key);
+      return null;
+    }
+}
+
 export function parseRequest(requestBuffer) {
   const req = requestBuffer.toString();
 
   // Split headers and body
-  const [headerSection, body] = req.split("\r\n\r\n");
+  const [headerSection, body] = req.split("\r\n\r\n",2);
 
   if (!headerSection) {
     return error({ error: "Invalid request format: Missing header section" });
@@ -22,13 +48,23 @@ export function parseRequest(requestBuffer) {
   const [url, queryString] = path.split("?", 2);
   const queryParams = new URLSearchParams(queryString);
 
+  // generate cache key 
+  const cacheKey = `${method}:${url}?${queryString}:${JSON.stringify(headerLine)}`;
+
+  if (method === 'GET') {
+    const cachedResponse = getCached(cacheKey);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+  }
+
   // parse headers and cookie
   const headers = {};
   const Cookies = {};
   for (const line of headerLine) {
     const [key, value] = line.split(": ");
     headers[key.toLowerCase()] = value;
-    if (key === "cookie") {
+    if (key.toLowerCase() === "cookie") {
       value.split(";").forEach((cookie) => {
         const [Cookiekey, Cookievalue] = cookie.trim().split("=");
         Cookies[Cookiekey] = decodeURIComponent(Cookievalue);
@@ -57,7 +93,8 @@ export function parseRequest(requestBuffer) {
     queryParamsObject[key] = value;
   }
 
-  return {
+
+  const res =  {
     method,
     path: decodeURIComponent(path),
     version,
@@ -66,4 +103,9 @@ export function parseRequest(requestBuffer) {
     query: queryParams,
     Cookies,
   };
+
+  if (method === 'GET') {
+    setCache(cacheKey,res)
+  }
+  return res;
 }
