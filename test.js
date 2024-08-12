@@ -1,11 +1,14 @@
 import Maya from "./src/server.js";
+import { hello } from "./hello.js";
 
 const maya = new Maya();
 const port = 3000;
+
+maya.use(hello);
+
 maya.post("/", async (request, res) => {
   const data = {
     body: request.body,
-    query: request?.query,
   };
   return res.jsonResponse(data);
 });
@@ -18,12 +21,12 @@ maya.get("/error-test", async (request, res) => {
   return res.send("Hello");
 });
 
-maya.get('/rediret',(req,res) => {
-  return res.redirect('/')
-})
+maya.get("/rediret", (req, res) => {
+  return res.redirect("/");
+});
 
 maya.get("/", (req, res) => {
-  return res.jsonResponse({ msg: "Hello world!!, how is this ???" });
+  return res.jsonResponse({ msg: "hii" });
 });
 
 maya.listen(port, () => {

@@ -1,4 +1,4 @@
-# Porny
+# Mayajs
 
 A simple HTTP server library.
 

@@ -10,6 +10,7 @@ class Maya {
       PUT: {},
       DELETE: {},
     };
+    this.middlewares = {};
   }
 
   listen(port = 3000, callback) {
@@ -28,7 +29,7 @@ class Maya {
             return;
           }
 
-          handleRequest(parsedRequest, this.routes)
+          handleRequest(parsedRequest, this.routes, this.middlewares)
             .then((responseData) => {
               if (responseData) {
                 socket.write(responseData);
@@ -58,6 +59,14 @@ class Maya {
         console.log(`Server is running on port ${port}`);
       }
     });
+  }
+
+  use(pathORhandler, handler) {
+    if (typeof pathORhandler === "string") {
+      this.middlewares[pathORhandler] = handler;
+    } else {
+      this.middlewares["/"] = pathORhandler;
+    }
   }
 
   get(path, handler) {
