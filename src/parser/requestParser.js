@@ -1,30 +1,10 @@
-const getCache = new Map()
-const CACHE_TTL = 10 * 1000;
-const MAX_CACHE_SIZE = 10000; // Maximum number of cache entries
+import Cache  from "../cache/cache.js";
 
-
-function setCache(key,value) {
-  const timeStamp = Date.now()
-  if (getCache.size >= MAX_CACHE_SIZE) {
-    const oldestKey = getCache.keys().next().value;
-    getCache.delete(oldestKey);
-  }
-  getCache.set(key,{value,timeStamp})
-}
-
-function getCached (key) {
-    const cached = getCache.get(key)
-    if (cached && (Date.now() - cached.timeStamp) < CACHE_TTL) {
-      getCache.delete(key);
-    getCache.set(key, cached);
-      return cached;
-    } else {
-      getCache.delete(key);
-      return null;
-    }
-}
 
 export function parseRequest(requestBuffer) {
+
+  const cache = new Cache()
+
   const req = requestBuffer.toString();
 
   // Split headers and body
@@ -48,15 +28,16 @@ export function parseRequest(requestBuffer) {
   const [url, queryString] = path.split("?", 2);
   const queryParams = new URLSearchParams(queryString);
 
-  // generate cache key 
-  const cacheKey = `${method}:${url}?${queryString}:${JSON.stringify(headerLine)}`;
 
-  if (method === 'GET') {
-    const cachedResponse = getCached(cacheKey);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-  }
+  //  generate cache key 
+ const cacheKey = `${method}:${url}?${queryString}:${JSON.stringify(headerLine)}`;
+
+ if (method === 'GET') {
+   const cachedResponse = cache.getCached(cacheKey);
+   if (cachedResponse) {
+     return cachedResponse;
+   }
+ } 
 
   // parse headers and cookie
   const headers = {};
@@ -94,6 +75,7 @@ export function parseRequest(requestBuffer) {
   }
 
 
+
   const res =  {
     method,
     path: decodeURIComponent(path),
@@ -105,7 +87,7 @@ export function parseRequest(requestBuffer) {
   };
 
   if (method === 'GET') {
-    setCache(cacheKey,res)
+    cache.setCache(cacheKey,res)
   }
   return res;
 }

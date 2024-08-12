@@ -1,5 +1,6 @@
 import ErrorHandler from "../responseHandler/errResponse.js";
 import ResponseHandler from "../responseHandler/responseHandler.js";
+
 export async function handleRequest(request, route, middlewares) {
   const { method, path } = request;
   const response = ResponseHandler;
@@ -25,6 +26,7 @@ export async function handleRequest(request, route, middlewares) {
       });
       // If the middleware has sent a response, exit early
       if (response.finished) {
+        console.log('req has finished')
         return;
       }
     }
