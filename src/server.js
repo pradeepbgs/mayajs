@@ -1,6 +1,5 @@
 import net from "net";
 import { handleRequest } from "./requestHandler/requestHandler.js";
-import { jsonResponse } from "./responseHandler/reshandler.js";
 import { parseRequest } from "./parser/requestParser.js";
 import ErrorHandler from "./responseHandler/errResponse.js";
 class Maya {
@@ -71,10 +70,6 @@ class Maya {
 
   delete(path, handler) {
     this.routes.DELETE[path] = handler;
-  }
-
-  jsonResponse(data, statusCode = 200, statusMessage = "OK") {
-    return jsonResponse(data, statusCode, statusMessage);
   }
 }
 
