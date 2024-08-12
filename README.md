@@ -9,43 +9,35 @@ npm install mayajs
 
 ## How to Use
 
-```bash
-import Maya from 'maya';
 
-const app = new Maya();
+import Maya from "./src/server.js";
 
-// Define a POST route
-app.post('/', async (request) => {
-    const data = {
-        body: request.body,
-        query: request?.query
-    };
-    return app.jsonResponse(data, 200, 'OK');
+const maya = new Maya();
+const port = 3000;
+maya.post("/", async (request, res) => {
+  const data = {
+    body: request.body,
+    query: request?.query,
+  };
+  return res.jsonResponse(data);
+});
+maya.get("/async-test", async (request, res) => {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  return res.jsonResponse({ message: "Async operation completed" });
 });
 
-// Define an async GET route
-app.get('/async-test', async (request) => {
-    // Simulate a delay (e.g., database query)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    return app.jsonResponse({ message: 'Async operation completed' });
+maya.get("/error-test", async (request, res) => {
+  return res.send("Hello");
 });
 
-// Define a GET route that simulates an error
-app.get('/error-test', async (request) => {
-    // Simulate an error
-    throw new Error('This is a test error');
+maya.get('/rediret',(req,res) => {
+  return res.redirect('/')
+})
+
+maya.get("/", (req, res) => {
+  return res.jsonResponse({ msg: "Hello world!!, how is this ???" });
 });
 
-// Define a GET route
-app.get('/', (request) => {
-    try {
-        return app.jsonResponse({ data: 'data' });
-    } catch (error) {
-        console.error('Error in GET /:', error);
-        return app.jsonResponse({ error: 'Internal Server Error' }, 500);
-    }
+maya.listen(port, () => {
+  console.log(`hey my Mayajs server is running..!! on port: ${port}`);
 });
-
-// Start the server
-app.listen(3000);
-

@@ -7,10 +7,9 @@ maya.post("/", async (request, res) => {
     body: request.body,
     query: request?.query,
   };
-  return res.jsonResponse(data, 200, "OK");
+  return res.jsonResponse(data);
 });
 maya.get("/async-test", async (request, res) => {
-  // Simulate a delay (e.g., database query)
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return res.jsonResponse({ message: "Async operation completed" });
 });
@@ -18,6 +17,10 @@ maya.get("/async-test", async (request, res) => {
 maya.get("/error-test", async (request, res) => {
   return res.send("Hello");
 });
+
+maya.get('/rediret',(req,res) => {
+  return res.redirect('/')
+})
 
 maya.get("/", (req, res) => {
   return res.jsonResponse({ msg: "Hello world!!, how is this ???" });
