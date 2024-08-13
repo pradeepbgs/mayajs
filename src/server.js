@@ -1,5 +1,4 @@
 import net from "net";
-import { parseRequest } from "./requestParser.js";
 import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
 
@@ -13,10 +12,11 @@ class Maya {
     };
     this.middlewares = {};
     this.ResponseHandler = ResponseHandler;
+    this.isBodyParse = false
   }
   listen(port = 3000, callback) {
-    const handleConnection = createConnectionHandler(this);
-    const server = net.createServer(handleConnection);
+    const handleConnection = createConnectionHandler(this,this.isBodyParse);
+    const server = net.createServer((socket) => handleConnection(socket));
 
     server.listen(port, () => {
       if (typeof callback === "function") {
@@ -34,8 +34,7 @@ class Maya {
   }
 
   bodyParse() {
-    console.log("body parse func");
-    return parseRequest(this.buffer);
+    this.isBodyParse = true;
   }
 
   get(path, handler) {

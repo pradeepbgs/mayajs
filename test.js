@@ -4,9 +4,10 @@ import { hello } from "./hello.js";
 const maya = new Maya();
 const port = 3000;
 
-// maya.bodyParse;
-//
+
 // maya.use(hello);
+
+// maya.bodyParse()
 
 maya.post("/", async (request, res) => {
   const data = {

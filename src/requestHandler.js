@@ -2,6 +2,9 @@ import ErrorHandler from "./errResponse.js";
 import ResponseHandler from "./responseHandler.js";
 
 export async function handleRequest(request, route) {
+  if (typeof request !== 'object') {
+    return ErrorHandler.badRequest("Invalid request object.");
+  }
   const { method, path } = request;
   const response = ResponseHandler;
 

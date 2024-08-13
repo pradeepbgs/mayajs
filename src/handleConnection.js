@@ -3,15 +3,22 @@ import { handleRequest } from "./requestHandler.js";
 import ErrorHandler from "./errResponse.js";
 import { Buffer } from "buffer";
 
-export function createConnectionHandler(maya) {
+export function createConnectionHandler(maya,isBodyParse) {
   return async function handleConnection(socket) {
     let buffer = Buffer.alloc(0);
     socket.on("data", async (data) => {
+      let parsedRequest ;
+      if (isBodyParse) {
       buffer = Buffer.concat([buffer, data]);
-
       if (buffer.includes(Buffer.from("\r\n\r\n"))) {
-        let parsedRequest = parseRequest(buffer);
-        buffer = Buffer.alloc(0);
+          parsedRequest = await parseRequest(buffer)
+          buffer = Buffer.alloc(0);
+        } else {
+          return;
+        }
+      }else{
+        parseRequest = parseRequestWithoutBody(data)
+      };
         if (parsedRequest.error) {
           console.error("Request parsing error:", parsedRequest.error);
           socket.write(ErrorHandler.badRequest(parsedRequest.error));
@@ -20,25 +27,6 @@ export function createConnectionHandler(maya) {
         }
 
         const { middlewares, routes, ResponseHandler } = maya;
-
-        // if (globalMiddleware) {
-        //   try {
-        //     const res = await globalMiddleware(parsedRequest, maya.ResponseHandler, () => {});
-        //     if (res) {
-        //       socket.write(res);
-        //       buffer = Buffer.alloc(0)
-        //       socket.end();
-        //       return;
-        //     }
-        //   } catch (err) {
-        //     console.error("Error in global middleware:", err);
-        //     socket.write(ErrorHandler.internalServerError());
-        //     socket.end();
-        //     return;
-        //   }
-        // }
-
-        // we can use global and path prefix midlleware in one loop
 
         for (const [pathPrefix, middleware] of Object.entries(middlewares)) {
           if (pathPrefix === "/" || parsedRequest.path.startsWith(pathPrefix)) {
@@ -62,10 +50,20 @@ export function createConnectionHandler(maya) {
             socket.end();
           });
       }
-    });
+    );
 
     socket.on("error", (e) => {
       console.log("error on socket: ", e);
     });
+  };
+}
+
+function parseRequestWithoutBody(data) {
+  const requestLine = data.toString().split("\r\n")[0];
+  const [method, path] = requestLine.split(" ");
+  return {
+    method,
+    path,
+    headers: {},
   };
 }
