@@ -17,7 +17,7 @@ export function createConnectionHandler(maya,isBodyParse) {
           return;
         }
       }else{
-        parseRequest = parseRequestWithoutBody(data)
+        parsedRequest = parseRequestWithoutBody(data)
       };
         if (parsedRequest.error) {
           console.error("Request parsing error:", parsedRequest.error);
