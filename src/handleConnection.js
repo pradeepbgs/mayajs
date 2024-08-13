@@ -1,17 +1,17 @@
-import { parseRequest } from "../parser/requestParser.js";
-import { handleRequest } from "../requestHandler/requestHandler.js";
-import ErrorHandler from "../responseHandler/errResponse.js";
-import { Buffer } from 'buffer';
+import { parseRequest } from "./requestParser.js";
+import { handleRequest } from "./requestHandler.js";
+import ErrorHandler from "./errResponse.js";
+import { Buffer } from "buffer";
 
 export function createConnectionHandler(maya) {
   return async function handleConnection(socket) {
-    let buffer = Buffer.alloc(0)
+    let buffer = Buffer.alloc(0);
     socket.on("data", async (data) => {
       buffer = Buffer.concat([buffer, data]);
 
       if (buffer.includes(Buffer.from("\r\n\r\n"))) {
         let parsedRequest = parseRequest(buffer);
-        buffer = Buffer.alloc(0)
+        buffer = Buffer.alloc(0);
         if (parsedRequest.error) {
           console.error("Request parsing error:", parsedRequest.error);
           socket.write(ErrorHandler.badRequest(parsedRequest.error));
@@ -19,7 +19,7 @@ export function createConnectionHandler(maya) {
           return;
         }
 
-        const {middlewares,routes,ResponseHandler} = maya 
+        const { middlewares, routes, ResponseHandler } = maya;
 
         // if (globalMiddleware) {
         //   try {
@@ -53,7 +53,7 @@ export function createConnectionHandler(maya) {
 
         handleRequest(parsedRequest, routes, middlewares)
           .then((responseData) => {
-            socket.write(responseData || ErrorHandler.internalServerError())
+            socket.write(responseData || ErrorHandler.internalServerError());
             socket.end();
           })
           .catch((err) => {

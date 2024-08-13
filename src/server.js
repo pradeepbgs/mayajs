@@ -1,6 +1,6 @@
 import net from "net";
-import { parseRequest } from "../parser/requestParser.js";
-import ResponseHandler from "../responseHandler/responseHandler.js";
+import { parseRequest } from "./requestParser.js";
+import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
 
 class Maya {

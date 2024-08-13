@@ -1,14 +1,12 @@
-import Cache  from "../cache/cache.js";
-
+import Cache from "./cache.js";
 
 export function parseRequest(requestBuffer) {
-
-  const cache = new Cache()
+  const cache = new Cache();
 
   const req = requestBuffer.toString();
 
   // Split headers and body
-  const [headerSection, body] = req.split("\r\n\r\n",2);
+  const [headerSection, body] = req.split("\r\n\r\n", 2);
 
   if (!headerSection) {
     return error({ error: "Invalid request format: Missing header section" });
@@ -28,16 +26,15 @@ export function parseRequest(requestBuffer) {
   const [url, queryString] = path.split("?", 2);
   const queryParams = new URLSearchParams(queryString);
 
+  //  generate cache key
+  const cacheKey = `${method}:${url}?${queryString}:${JSON.stringify(headerLine)}`;
 
-  //  generate cache key 
- const cacheKey = `${method}:${url}?${queryString}:${JSON.stringify(headerLine)}`;
-
- if (method === 'GET') {
-   const cachedResponse = cache.getCached(cacheKey);
-   if (cachedResponse) {
-     return cachedResponse;
-   }
- } 
+  if (method === "GET") {
+    const cachedResponse = cache.getCached(cacheKey);
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+  }
 
   // parse headers and cookie
   const headers = {};
@@ -74,9 +71,7 @@ export function parseRequest(requestBuffer) {
     queryParamsObject[key] = value;
   }
 
-
-
-  const res =  {
+  const res = {
     method,
     path: decodeURIComponent(path),
     version,
@@ -86,8 +81,8 @@ export function parseRequest(requestBuffer) {
     Cookies,
   };
 
-  if (method === 'GET') {
-    cache.setCache(cacheKey,res)
+  if (method === "GET") {
+    cache.setCache(cacheKey, res);
   }
   return res;
 }

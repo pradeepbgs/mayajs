@@ -1,5 +1,5 @@
-import ErrorHandler from "../responseHandler/errResponse.js";
-import ResponseHandler from "../responseHandler/responseHandler.js";
+import ErrorHandler from "./errResponse.js";
+import ResponseHandler from "./responseHandler.js";
 
 export async function handleRequest(request, route) {
   const { method, path } = request;

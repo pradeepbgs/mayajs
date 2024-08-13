@@ -1,4 +1,4 @@
-import Maya from "./src/server/server.js";
+import Maya from "./src/server.js";
 import { hello } from "./hello.js";
 
 const maya = new Maya();
