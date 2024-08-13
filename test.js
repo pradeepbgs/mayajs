@@ -1,9 +1,11 @@
-import Maya from "./src/server.js";
+import Maya from "./src/server/server.js";
 import { hello } from "./hello.js";
 
 const maya = new Maya();
 const port = 3000;
 
+// maya.bodyParse;
+//
 // maya.use(hello);
 
 maya.post("/", async (request, res) => {
