@@ -7,7 +7,7 @@ const port = 3000;
 
 // maya.use('/',hello);
 
-maya.bodyParse()
+// maya.bodyParse()
 
 // maya.compile()
 
@@ -31,7 +31,8 @@ maya.get("/rediret", (req, res) => {
 });
 
 maya.get("/", (req, res) => {
-  return res.jsonResponse({ msg: "hii" });
+  // const number = Math.random()
+  return res.jsonResponse({ msg: "hii"});
 });
 
 maya.listen(port, () => {
