@@ -3,54 +3,58 @@ import { handleRequest } from "./requestHandler.js";
 import ErrorHandler from "./errResponse.js";
 import { Buffer } from "buffer";
 
-export function createConnectionHandler(maya,isBodyParse) {
+export function createConnectionHandler(maya, isBodyParse) {
   return async function handleConnection(socket) {
     let buffer = Buffer.alloc(0);
     socket.on("data", async (data) => {
-      let parsedRequest ;
+      let parsedRequest;
       if (isBodyParse) {
-      buffer = Buffer.concat([buffer, data]);
-      if (buffer.includes(Buffer.from("\r\n\r\n"))) {
-          parsedRequest = await parseRequest(buffer)
+        buffer = Buffer.concat([buffer, data]);
+        if (buffer.includes(Buffer.from("\r\n\r\n"))) {
+          parsedRequest = await parseRequest(buffer);
           buffer = Buffer.alloc(0);
         } else {
           return;
         }
-      }else{
-        parsedRequest = parseRequestWithoutBody(data)
-      };
-        if (parsedRequest.error) {
-          console.error("Request parsing error:", parsedRequest.error);
-          socket.write(ErrorHandler.badRequest(parsedRequest.error));
-          socket.end();
-          return;
-        }
+      } else {
+        parsedRequest = parseRequestWithoutBody(data);
+      }
+      if (parsedRequest.error) {
+        return parsedRequestError(socket, parsedRequest.error);
+      }
 
-        const { middlewares, routes, ResponseHandler } = maya;
+      const { compiledMiddlewares, compiledRoutes, ResponseHandler } = maya;
 
-        for (const [pathPrefix, middleware] of Object.entries(middlewares)) {
-          if (pathPrefix === "/" || parsedRequest.path.startsWith(pathPrefix)) {
-            const res = await middleware(parsedRequest, ResponseHandler, () => {});
-            if (res) {
-              socket.write(res);
-              socket.end();
-              return;
-            }
+      for (const [pathPrefix, middleware] of compiledMiddlewares) {
+        if (pathPrefix === "/" || parsedRequest.path.startsWith(pathPrefix)) {
+          const res = await middleware(
+            parsedRequest,
+            ResponseHandler,
+            () => {}
+          );
+          if (res) {
+            socket.write(res);
+            socket.end();
+            return;
           }
         }
-
-        handleRequest(parsedRequest, routes, middlewares)
-          .then((responseData) => {
-            socket.write(responseData || ErrorHandler.internalServerError());
-            socket.end();
-          })
-          .catch((err) => {
-            console.error("Error handling request:", err);
-            socket.write(ErrorHandler.internalServerError());
-            socket.end();
-          });
       }
-    );
+
+      const routeHandler = maya.compiledRoutes[parsedRequest.method]?.find(([path]) =>
+        parsedRequest.path.startsWith(path)
+      )?.[1];
+
+      handleRequest(parsedRequest, compiledRoutes, maya.middlewares)
+        .then((responseData) => {
+          socket.write(responseData || ErrorHandler.internalServerError());
+          socket.end();
+        })
+        .catch((err) => {
+          console.error("Error handling request:", err);
+          socket.write(ErrorHandler.internalServerError());
+          socket.end();
+        });
+    });
 
     socket.on("error", (e) => {
       console.log("error on socket: ", e);
@@ -66,4 +70,10 @@ function parseRequestWithoutBody(data) {
     path,
     headers: {},
   };
+}
+
+function parsedRequestError(socket, error) {
+  console.error("Request parsing error:", error);
+  socket.write(ErrorHandler.badRequest(error));
+  socket.end();
 }

@@ -6,15 +6,36 @@ class Maya {
   constructor() {
     this.routes = {
       GET: {},
-      POST: {},
+      POST: {}, 
       PUT: {},
       DELETE: {},
     };
     this.middlewares = {};
     this.ResponseHandler = ResponseHandler;
-    this.isBodyParse = false
+    this.isBodyParse = false;
+    this.compiledMiddlewares = [];
+    this.compiledRoutes = {};
   }
+  compile() {
+    console.log("Compiling middlewares and routes...");
+  
+    // Preprocess middlewares
+    this.compiledMiddlewares = Object.entries(this.middlewares)
+      .sort(([a], [b]) => b.length - a.length);
+  
+    console.log("Compiled middlewares:", this.compiledMiddlewares);
+  
+    // Preprocess routes by method
+    for (const method in this.routes) {
+      this.compiledRoutes[method] = Object.entries(this.routes[method])
+        .sort(([a], [b]) => b.length - a.length);
+      
+      console.log(`Compiled routes for ${method}:`, this.compiledRoutes[method]);
+    }
+  }
+
   listen(port = 3000, callback) {
+    this.compile()
     const handleConnection = createConnectionHandler(this,this.isBodyParse);
     const server = net.createServer((socket) => handleConnection(socket));
 

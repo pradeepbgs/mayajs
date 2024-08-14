@@ -2,8 +2,9 @@ import Cache from "./cache.js";
 
 export function parseRequest(requestBuffer) {
   const cache = new Cache();
-
-  const req = requestBuffer.toString();
+// console.log(requestBuffer)
+  const req = requestBuffer.toString()
+  // console.log(requestBuffer)
 
   // Split headers and body
   const [headerSection, body] = req.split("\r\n\r\n", 2);
@@ -62,7 +63,7 @@ export function parseRequest(requestBuffer) {
     } else if (contentType === "application/x-www-form-urlencoded") {
       parsedBody = Object.fromEntries(new URLSearchParams(body));
     } else {
-      parsedBody = body; // Or handle other content types as needed
+      parsedBody = body; 
     }
   }
 

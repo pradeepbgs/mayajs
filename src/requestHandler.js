@@ -8,15 +8,16 @@ export async function handleRequest(request, route) {
   const { method, path } = request;
   const response = ResponseHandler;
 
-  //
   const [routerPath, queryString] = (path || "").split("?");
   const query = queryString ? new URLSearchParams(queryString) : new URLSearchParams();
 
   // Convert query parameters to an object
   const queryObject = Object.fromEntries(query.entries());
   request.query = queryObject;
+ 
+  const routeHandlers = route[method] || []
+  const handler = routeHandlers.find(([path]) => path === routerPath)?.[1]
 
-  const handler = route[method][routerPath];
   if (handler) {
     try {
       const res = await handler(request, response);
