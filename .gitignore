@@ -1,1 +1,10 @@
 node_modules/
+
+./hello.js
+./test.js
+
+hello.js
+test.js
+
+.hello.js
+.test.js

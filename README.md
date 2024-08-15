@@ -9,33 +9,44 @@ npm install mayajs
 
 ## How to Use
 
-
-import Maya from "./src/server.js";
+import Maya from "mayajs";
+import { hello } from "./hello.js"; // your middleware
 
 const maya = new Maya();
 const port = 3000;
+
+
+maya.use(hello);
+
+maya.bodyParse()
+
+
 maya.post("/", async (request, res) => {
   const data = {
     body: request.body,
-    query: request?.query,
   };
-  return res.jsonResponse(data);
+  return res.json(data);
 });
 maya.get("/async-test", async (request, res) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  return res.jsonResponse({ message: "Async operation completed" });
+  return res.json({ message: "Async operation completed" });
 });
 
 maya.get("/error-test", async (request, res) => {
   return res.send("Hello");
 });
 
-maya.get('/rediret',(req,res) => {
-  return res.redirect('/')
+maya.get("/rediret", (req, res) => {
+  return res.redirect("/");
+});
+
+maya.get('/hello',(rek,res)=>{
+  return res.json({msg:"/hello"})
 })
 
 maya.get("/", (req, res) => {
-  return res.jsonResponse({ msg: "Hello world!!, how is this ???" });
+  // const number = Math.random()
+  return res.json({ msg: "hii"});
 });
 
 maya.listen(port, () => {

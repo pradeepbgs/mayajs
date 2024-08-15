@@ -5,21 +5,20 @@ const maya = new Maya();
 const port = 3000;
 
 
-// maya.use(hello);
+maya.use(hello);
 
 maya.bodyParse()
 
-// maya.compile()
 
 maya.post("/", async (request, res) => {
   const data = {
     body: request.body,
   };
-  return res.jsonResponse(data);
+  return res.json(data);
 });
 maya.get("/async-test", async (request, res) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  return res.jsonResponse({ message: "Async operation completed" });
+  return res.json({ message: "Async operation completed" });
 });
 
 maya.get("/error-test", async (request, res) => {
@@ -31,12 +30,12 @@ maya.get("/rediret", (req, res) => {
 });
 
 maya.get('/hello',(rek,res)=>{
-  return res.jsonResponse({msg:"/hello"})
+  return res.json({msg:"/hello"})
 })
 
 maya.get("/", (req, res) => {
   // const number = Math.random()
-  return res.jsonResponse({ msg: "hii"});
+  return res.json({ msg: "hii"});
 });
 
 maya.listen(port, () => {

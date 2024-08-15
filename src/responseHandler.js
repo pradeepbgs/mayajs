@@ -15,7 +15,7 @@ class ResponseHandler {
     response += typeof data === "object" ? JSON.stringify(data) : data;
     return response;
   }
-  jsonResponse(data, statusCode = 200, statusMessage = "OK") {
+  json(data, statusCode = 200, statusMessage = "OK") {
     return this._generateResponse(data, statusCode, statusMessage, "application/json");
   }
 

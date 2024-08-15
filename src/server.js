@@ -18,12 +18,15 @@ class Maya {
     this.compiledMiddlewares = [];
     this.compiledRoutes = {};
   }
+
   compile() {
 
-    this.compiledMiddlewares = Object.entries(this.middlewares).sort(([a], [b]) => b.length - a.length);
+    this.compiledMiddlewares = Object.entries(this.middlewares)
+    .sort(([a], [b]) => b.length - a.length);
 
     for (const method in this.routes) {
-      this.compiledRoutes[method] = Object.entries(this.routes[method]).sort(([a], [b]) => b.length - a.length);
+      this.compiledRoutes[method] = Object.entries(this.routes[method])
+      .sort(([a], [b]) => b.length - a.length);
     }
   }
 
