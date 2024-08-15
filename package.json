@@ -1,6 +1,6 @@
 {
   "name": "mayajs",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "A Simple http server library",
   "main": "src/server.js",
   "type": "module",

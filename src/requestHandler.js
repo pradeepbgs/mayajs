@@ -1,11 +1,17 @@
 import ErrorHandler from "./errResponse.js";
 import ResponseHandler from "./responseHandler.js";
 
-export async function handleRequest(request, route) {
-  // console.log("hello??")
-  if (typeof request !== 'object') {
-    return ErrorHandler.badRequest("Invalid request object.");
+export async function handleRequest(request, route , compiledMiddlewares) {
+ 
+  for (const [pathPrefix, middleware] of compiledMiddlewares) {
+    if (pathPrefix === "/" || request.path.startsWith(pathPrefix)) {
+      const res = await middleware(request, ResponseHandler, () => {});
+      if (res) {
+        return res;
+      }
+    }
   }
+
   const { method, path } = request;
   const response = ResponseHandler;
 
@@ -15,9 +21,9 @@ export async function handleRequest(request, route) {
   // Convert query parameters to an object
   const queryObject = Object.fromEntries(query.entries());
   request.query = queryObject;
- 
-  const routeHandlers = route[method] || []
-  const handler = routeHandlers.find(([path]) => path === routerPath)?.[1]
+
+  const routeHandlers = route[method] || [];
+  const handler = routeHandlers.find(([path]) => path === routerPath)?.[1];
 
   if (handler) {
     try {
@@ -28,6 +34,7 @@ export async function handleRequest(request, route) {
       return ErrorHandler.internalServerError();
     }
   } else {
+    console.error(ErrorHandler.RouteNotFoundError())
     return ErrorHandler.RouteNotFoundError();
   }
 }

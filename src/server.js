@@ -1,14 +1,16 @@
 import net from "net";
 import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
+import Trie from "./trie.js";
 
 class Maya {
   constructor() {
     this.routes = {
       GET: {},
-      POST: {}, 
+      POST: {},
       PUT: {},
       DELETE: {},
+      PATCH:{}
     };
     this.middlewares = {};
     this.ResponseHandler = ResponseHandler;
@@ -17,26 +19,17 @@ class Maya {
     this.compiledRoutes = {};
   }
   compile() {
-    console.log("Compiling middlewares and routes...");
-  
-    // Preprocess middlewares
-    this.compiledMiddlewares = Object.entries(this.middlewares)
-      .sort(([a], [b]) => b.length - a.length);
-  
-    console.log("Compiled middlewares:", this.compiledMiddlewares);
-  
-    // Preprocess routes by method
+
+    this.compiledMiddlewares = Object.entries(this.middlewares).sort(([a], [b]) => b.length - a.length);
+
     for (const method in this.routes) {
-      this.compiledRoutes[method] = Object.entries(this.routes[method])
-        .sort(([a], [b]) => b.length - a.length);
-      
-      console.log(`Compiled routes for ${method}:`, this.compiledRoutes[method]);
+      this.compiledRoutes[method] = Object.entries(this.routes[method]).sort(([a], [b]) => b.length - a.length);
     }
   }
 
   listen(port = 3000, callback) {
-    this.compile()
-    const handleConnection = createConnectionHandler(this,this.isBodyParse);
+    this.compile();
+    const handleConnection = createConnectionHandler(this, this.isBodyParse);
     const server = net.createServer((socket) => handleConnection(socket));
 
     server.listen(port, () => {
@@ -72,6 +65,10 @@ class Maya {
 
   delete(path, handler) {
     this.routes.DELETE[path] = handler;
+  }
+
+  patch(path,handler){
+    this.routes.PATCH[path] = handler;
   }
 }
 

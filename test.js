@@ -5,9 +5,9 @@ const maya = new Maya();
 const port = 3000;
 
 
-// maya.use('/',hello);
+// maya.use(hello);
 
-// maya.bodyParse()
+maya.bodyParse()
 
 // maya.compile()
 
@@ -29,6 +29,10 @@ maya.get("/error-test", async (request, res) => {
 maya.get("/rediret", (req, res) => {
   return res.redirect("/");
 });
+
+maya.get('/hello',(rek,res)=>{
+  return res.jsonResponse({msg:"/hello"})
+})
 
 maya.get("/", (req, res) => {
   // const number = Math.random()
