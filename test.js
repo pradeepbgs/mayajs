@@ -29,8 +29,9 @@ maya.get("/rediret", (req, res) => {
   return res.redirect("/");
 });
 
-maya.get('/hello',(rek,res)=>{
-  return res.json({msg:"/hello"})
+maya.get('/hello/:id',(rek,res)=>{
+  const id  = rek.query.id;
+  return res.json({msg:"hello",id})
 })
 
 maya.get("/", (req, res) => {
