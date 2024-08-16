@@ -5,8 +5,10 @@ const maya = new Maya();
 const port = 3000;
 
 
+// this is a middleware example
 maya.use(hello);
 
+// this means our server will now parse the incoming req
 maya.bodyParse()
 
 
@@ -35,8 +37,7 @@ maya.get('/hello/:id',(rek,res)=>{
 })
 
 maya.get("/", (req, res) => {
-  // const number = Math.random()
-  return res.json({ msg: "hii"});
+  return res.json({ msg: "hii",user:req.user});
 });
 
 maya.listen(port, () => {

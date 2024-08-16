@@ -71,7 +71,7 @@ export function parseRequest(requestBuffer) {
   for (const [key, value] of queryParams.entries()) {
     queryParamsObject[key] = value;
   }
-
+  const user = null;
   const res = {
     method,
     path: decodeURIComponent(path),
@@ -80,6 +80,7 @@ export function parseRequest(requestBuffer) {
     body: parsedBody,
     query: queryParams,
     Cookies,
+    user
   };
 
   if (method === "GET") {

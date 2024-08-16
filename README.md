@@ -10,14 +10,16 @@ npm install mayajs
 ## How to Use
 
 import Maya from "mayajs";
-import { hello } from "./hello.js"; // your middleware
+import { hello } from "./hello.js";
 
 const maya = new Maya();
 const port = 3000;
 
 
+// this is a middleware example
 maya.use(hello);
 
+// this means our server will now parse the incoming req
 maya.bodyParse()
 
 
@@ -40,13 +42,13 @@ maya.get("/rediret", (req, res) => {
   return res.redirect("/");
 });
 
-maya.get('/hello',(rek,res)=>{
-  return res.json({msg:"/hello"})
+maya.get('/hello/:id',(rek,res)=>{
+  const id  = rek.query.id;
+  return res.json({msg:"hello",id})
 })
 
 maya.get("/", (req, res) => {
-  // const number = Math.random()
-  return res.json({ msg: "hii"});
+  return res.json({ msg: "hii",user:req.user});
 });
 
 maya.listen(port, () => {
