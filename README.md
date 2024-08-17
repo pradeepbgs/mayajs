@@ -1,13 +1,21 @@
-# Mayajs
+# MayaJS
 
-A simple HTTP server library.
+**MayaJS** is a simple and lightweight HTTP server library for Node.js, designed to give you control over your API routes and middleware in an intuitive and efficient way. With MayaJS, you can quickly set up a server, define routes, and optimize important routes for faster response times.
+
+## Features
+
+- **Simple API**: Easy-to-use methods for handling HTTP requests.
+- **Middleware Support**: Integrate middleware to process requests before they reach your handlers.
+- **Route Prioritization**: Mark routes as important to optimize search and response times.
+- **Async/Await Support**: Handle asynchronous operations effortlessly.
+- **Body Parsing**: Enable request body parsing with a single method.
 
 ## Installation
 
+Install MayaJS via npm:
+
 ```bash
 npm install mayajs
-
-## How to Use
 
 import Maya from "mayajs";
 import { hello } from "./hello.js";
@@ -15,43 +23,44 @@ import { hello } from "./hello.js";
 const maya = new Maya();
 const port = 3000;
 
-
-// this is a middleware example
+// Middleware example
 maya.use(hello);
 
-// this means our server will now parse the incoming req
-maya.bodyParse()
+// Enable request body parsing
+maya.bodyParse();
 
-maya.get("/").handler((req,res) =>{
-  return res.json({msg:"Hello"})
+// Define routes
+maya.get("/").handler((req, res) => {
+  return res.json({ msg: "Hello, world!" });
 });
 
-maya.get('/important-route').isImportant()
-.handler((req,res) => {
+maya.get("/important-route").isImportant().handler((req, res) => {
   return res.json({
-    msg:"isIsmportant() means this route will will be used frequently so making it important will tell our library to make it on top of our precompiled route so our lib doesnt have to search more , it will search important route fast"
-  })
+    msg: "This route is marked as important and is optimized for faster access.",
+  });
 });
 
-maya.get("/async-test").handler(( async (request, res) => {
+maya.get("/async-test").handler(async (req, res) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return res.json({ message: "Async operation completed" });
-}));
-
-maya.get("/error-test").isImportant()
-.handler((req,res) => {
-    return res.send("Hello");
 });
 
-maya.get("/rediret").handler(((req, res) => {
+maya.get("/error-test").isImportant().handler((req, res) => {
+  return res.send("Hello, error handler!");
+});
+
+maya.get("/redirect").handler((req, res) => {
   return res.redirect("/");
-}));
-
-maya.get('/hello/:id').handler((rek,res)=>{
-  const id  = rek.query.id;
-  return res.json({msg:"hello",id})
 });
 
+maya.get("/hello/:id").handler((req, res) => {
+  const id = req.params.id;
+  return res.json({ msg: "Hello", id });
+});
+
+// Start the server
 maya.listen(port, () => {
-  console.log(`hey my Mayajs server is running..!! on port: ${port}`);
+  console.log(`MayaJS server is running on port ${port}`);
 });
+
+
