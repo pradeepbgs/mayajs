@@ -28,11 +28,11 @@ export async function handleRequest(request, route, compiledMiddlewares) {
     if (routePattern.includes(":")) {
       dynamicParams = extractDynamicParams(routePattern, path);
       if (dynamicParams) {
-        handler = routeHandler;
+        handler = routeHandler.handler;
         break;
       }
     } else if (routePattern === routerPath) {
-      handler = routeHandler;
+      handler = routeHandler.handler;
       break;
     }
   }

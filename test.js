@@ -11,33 +11,34 @@ maya.use(hello);
 // this means our server will now parse the incoming req
 maya.bodyParse()
 
-
-maya.post("/", async (request, res) => {
-  const data = {
-    body: request.body,
-  };
-  return res.json(data);
+maya.get("/").handler((req,res) =>{
+  return res.json({msg:"Hello"})
 });
-maya.get("/async-test", async (request, res) => {
+
+maya.get('/important-route').isImportant()
+.handler((req,res) => {
+  return res.json({
+    msg:"isIsmportant() means this route will will be used frequently so making it important will tell our library to make it on top of our precompiled route so our lib doesnt have to search more , it will search important route fast"
+  })
+});
+
+maya.get("/async-test").handler(( async (request, res) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return res.json({ message: "Async operation completed" });
+}));
+
+maya.get("/error-test").isImportant()
+.handler((req,res) => {
+    return res.send("Hello");
 });
 
-maya.get("/error-test", async (request, res) => {
-  return res.send("Hello");
-});
-
-maya.get("/rediret", (req, res) => {
+maya.get("/rediret").handler(((req, res) => {
   return res.redirect("/");
-});
+}));
 
-maya.get('/hello/:id',(rek,res)=>{
+maya.get('/hello/:id').handler((rek,res)=>{
   const id  = rek.query.id;
   return res.json({msg:"hello",id})
-})
-
-maya.get("/", (req, res) => {
-  return res.json({ msg: "hii",user:req.user});
 });
 
 maya.listen(port, () => {

@@ -26,7 +26,12 @@ class Maya {
 
     for (const method in this.routes) {
       this.compiledRoutes[method] = Object.entries(this.routes[method])
-      .sort(([a], [b]) => b.length - a.length);
+        .sort(([a, routeA], [b, routeB]) => {
+          // Prioritize important routes, then by path length
+          if (routeA.isImportant && !routeB.isImportant) return -1;
+          if (!routeA.isImportant && routeB.isImportant) return 1;
+          return b.length - a.length;
+        });
     }
   }
 
@@ -50,28 +55,46 @@ class Maya {
     }
   }
 
+ 
+
   bodyParse() {
     this.isBodyParse = true;
   }
 
-  get(path, handler) {
-    this.routes.GET[path] = handler;
+  defineRoute(method,path){
+    let isImportant=false;
+
+    const chain = {
+      isImportant: () =>{
+        isImportant = true
+        return chain;
+      },
+      handler: (handler) => {
+        this.routes[method][path] = {handler,isImportant};
+      }
+    }
+    return chain;
   }
 
-  post(path, handler) {
-    this.routes.POST[path] = handler;
+
+  get(path) {
+    return this.defineRoute("GET", path);
   }
 
-  put(path, handler) {
-    this.routes.PUT[path] = handler;
+  post(path) {
+    return this.defineRoute("POST", path);
   }
 
-  delete(path, handler) {
-    this.routes.DELETE[path] = handler;
+  put(path) {
+    return this.defineRoute("PUT", path);
   }
 
-  patch(path,handler){
-    this.routes.PATCH[path] = handler;
+  delete(path) {
+    return this.defineRoute("DELETE", path);
+  }
+
+  patch(path) {
+    return this.defineRoute("PATCH", path);
   }
 }
 
