@@ -2,11 +2,13 @@ import ErrorHandler from "./errResponse.js";
 import ResponseHandler from "./responseHandler.js";
 
 export async function handleRequest(request, route, compiledMiddlewares) {
-  for (const [pathPrefix, middleware] of compiledMiddlewares) {
+  for (const [pathPrefix, middlewares] of compiledMiddlewares) {
     if (pathPrefix === "/" || request.path.startsWith(pathPrefix)) {
-      const res = await middleware(request, ResponseHandler, () => { });
-      if (res) {
-        return res;
+      for (const middleware of middlewares) {
+        const res = await middleware(request, ResponseHandler, () => {});
+        if (res) {
+          return res;
+        }
       }
     }
   }
@@ -14,9 +16,7 @@ export async function handleRequest(request, route, compiledMiddlewares) {
   const { method, path } = request;
   const response = ResponseHandler;
   const [routerPath, queryString] = (path || "").split("?");
-  const query = queryString
-    ? new URLSearchParams(queryString)
-    : new URLSearchParams();
+  const query = queryString ? new URLSearchParams(queryString) : new URLSearchParams();
   // Convert query parameters to an object
   const queryObject = Object.fromEntries(query.entries());
   request.query = queryObject;
@@ -57,20 +57,19 @@ export async function handleRequest(request, route, compiledMiddlewares) {
 
 const extractDynamicParams = (routePattern, path) => {
   const object = {};
-  const routeSegments = routePattern.split('/');
-  const pathSegments = path.split('/');
+  const routeSegments = routePattern.split("/");
+  const pathSegments = path.split("/");
 
   if (routeSegments.length !== pathSegments.length) {
     return null; // Path doesn't match the pattern
   }
 
   routeSegments.forEach((segment, index) => {
-    if (segment.startsWith(':')) {
+    if (segment.startsWith(":")) {
       const dynamicKey = segment.slice(1); // Remove ':' to get the key name
       object[dynamicKey] = pathSegments[index]; // Map the path segment to the key
     }
   });
 
   return object;
-
 };

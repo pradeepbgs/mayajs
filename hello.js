@@ -4,8 +4,23 @@ export const hello = async (req, res, next) => {
   console.log("mdill");
   const auser = {
     id: 1,
-    name:"pradeep"
-  }
+    name: "pradeep",
+  };
   req.user = auser;
   next();
+};
+
+export const sm = async (req, res, next) => {
+  console.log("second middle");
+  next();
+};
+
+export const user1 = (req, res, next) => {
+  console.log("user path");
+  next();
+};
+
+export const user2 = (req, res, next) => {
+  console.log("user2");
+  return res.send("hello from");
 };

@@ -1,7 +1,6 @@
 import net from "net";
 import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
-import Trie from "./trie.js";
 
 class Maya {
   constructor() {
@@ -10,7 +9,7 @@ class Maya {
       POST: {},
       PUT: {},
       DELETE: {},
-      PATCH:{}
+      PATCH: {},
     };
     this.middlewares = {};
     this.ResponseHandler = ResponseHandler;
@@ -20,18 +19,15 @@ class Maya {
   }
 
   compile() {
-
-    this.compiledMiddlewares = Object.entries(this.middlewares)
-    .sort(([a], [b]) => b.length - a.length);
+    this.compiledMiddlewares = Object.entries(this.middlewares).sort(([a], [b]) => b.length - a.length);
 
     for (const method in this.routes) {
-      this.compiledRoutes[method] = Object.entries(this.routes[method])
-        .sort(([a, routeA], [b, routeB]) => {
-          // Prioritize important routes, then by path length
-          if (routeA.isImportant && !routeB.isImportant) return -1;
-          if (!routeA.isImportant && routeB.isImportant) return 1;
-          return b.length - a.length;
-        });
+      this.compiledRoutes[method] = Object.entries(this.routes[method]).sort(([a, routeA], [b, routeB]) => {
+        // Prioritize important routes, then by path length
+        if (routeA.isImportant && !routeB.isImportant) return -1;
+        if (!routeA.isImportant && routeB.isImportant) return 1;
+        return b.length - a.length;
+      });
     }
   }
 
@@ -48,34 +44,31 @@ class Maya {
   }
 
   use(pathORhandler, handler) {
-    if (typeof pathORhandler === "string") {
-      this.middlewares[pathORhandler] = handler;
-    } else {
-      this.middlewares["/"] = pathORhandler;
+    const path = typeof pathORhandler === "string" ? pathORhandler : "/";
+    if (!this.middlewares[path]) {
+      this.middlewares[path] = [];
     }
+    this.middlewares[path].push(handler || pathORhandler);
   }
-
- 
 
   bodyParse() {
     this.isBodyParse = true;
   }
 
-  defineRoute(method,path){
-    let isImportant=false;
+  defineRoute(method, path) {
+    let isImportant = false;
 
     const chain = {
-      isImportant: () =>{
-        isImportant = true
+      isImportant: () => {
+        isImportant = true;
         return chain;
       },
       handler: (handler) => {
-        this.routes[method][path] = {handler,isImportant};
-      }
-    }
+        this.routes[method][path] = { handler, isImportant };
+      },
+    };
     return chain;
   }
-
 
   get(path) {
     return this.defineRoute("GET", path);
