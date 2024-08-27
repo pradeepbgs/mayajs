@@ -1,9 +1,13 @@
 import net from "net";
+import tls from "tls";
+import fs from "fs";
+
 import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
 
 class Maya {
   constructor() {
+    this.sslOptions = null;
     this.routes = {
       GET: {},
       POST: {},
@@ -18,6 +22,24 @@ class Maya {
     this.compiledRoutes = {};
   }
 
+
+  useHttps(options = {}) {
+    if (options.keyPath && options.certPath) {
+      try {
+        this.sslOptions = {
+          key: fs.readFileSync(options.keyPath),
+          cert: fs.readFileSync(options.certPath)
+        }
+      } catch (error) {
+        console.error('Error reading SSL certificate or key:', error);
+        this.sslOptions = null;
+      }
+    } else {
+      console.warn("SSL options not provided. Server will default to HTTP.");
+      this.sslOptions = null;
+    }
+  }
+ 
   compile() {
     this.compiledMiddlewares = Object.entries(this.middlewares).sort(([a], [b]) => b.length - a.length);
 
@@ -34,20 +56,21 @@ class Maya {
   listen(port = 3000, callback) {
     this.compile();
     const handleConnection = createConnectionHandler(this, this.isBodyParse);
-    const server = net.createServer((socket) => handleConnection(socket));
 
-    server.listen(port, () => {
-      if (typeof callback === "function") {
-        return callback();
-      }
+    const server = this.sslOptions 
+      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket))
+      : net.createServer((socket) => handleConnection(socket));
+
+    server.listen(port, () => { 
+      if (typeof callback === "function") callback();
+        console.log(`Server is running on ${this.sslOptions ? 'https' : 'http'}://localhost:${port}`);
     });
+    return server;    
   }
 
   use(pathORhandler, handler) {
     const path = typeof pathORhandler === "string" ? pathORhandler : "/";
-    if (!this.middlewares[path]) {
-      this.middlewares[path] = [];
-    }
+    this.middlewares[path] = this.middlewares[path] || [];
     this.middlewares[path].push(handler || pathORhandler);
   }
 

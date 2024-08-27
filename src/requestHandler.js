@@ -50,7 +50,7 @@ export async function handleRequest(request, route, compiledMiddlewares) {
       return ErrorHandler.internalServerError();
     }
   } else {
-    console.error(ErrorHandler.RouteNotFoundError());
+    // console.error(ErrorHandler.RouteNotFoundError());
     return ErrorHandler.RouteNotFoundError();
   }
 }
