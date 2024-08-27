@@ -1,29 +1,61 @@
 import ErrorHandler from "./errResponse.js";
 import ResponseHandler from "./responseHandler.js";
 
+/**
+ * @typedef {Object} Request
+ * @property {string} method - The HTTP method of the request (e.g., 'GET', 'POST').
+ * @property {string} path - The request path, including query string.
+ * @property {Object} query - Parsed query parameters as an object.
+ */
+
+/**
+ * @typedef {Object} Route
+ * @property {Object.<string, Array<{handler: Function, isImportant?: boolean}>>} [method] - Route handlers grouped by HTTP method.
+ */
+
+/**
+ * @typedef {Array<[string, Array<Function>]>} CompiledMiddlewares
+ * @description An array of middleware definitions where each entry is a tuple with a path prefix and an array of middleware functions.
+ */
+
+/**
+ * Handles an incoming request by applying middleware and routing to the appropriate handler.
+ * @param {Request} request - The incoming request object.
+ * @param {Route} route - The route definitions for different HTTP methods.
+ * @param {CompiledMiddlewares} compiledMiddlewares - An array of middleware definitions.
+ * @returns {Promise<any>} - The result of the request handling.
+ */
 export async function handleRequest(request, route, compiledMiddlewares) {
+  // Parsing the request
+  const { method, path } = request;
+  const [routerPath, queryString] = (path || "").split("?");
+  const query = new URLSearchParams(queryString || "");
+  request.query = Object.fromEntries(query.entries());
+
+  // Global middleware runs here
+  const globalMiddleware = compiledMiddlewares.find(([pathPrefix]) => pathPrefix === '/');
+  if (globalMiddleware) {
+    for (const handler of globalMiddleware[1]) {
+      const res = await handler(request, ResponseHandler, () => {});
+      if (res) return res;
+    }
+  }
+
+  // Path prefix middleware runs here
   for (const [pathPrefix, middlewares] of compiledMiddlewares) {
-    if (pathPrefix === "/" || request.path.startsWith(pathPrefix)) {
+    if (pathPrefix !== '/' && request.path.startsWith(pathPrefix)) {
       for (const middleware of middlewares) {
         const res = await middleware(request, ResponseHandler, () => {});
-        if (res) {
-          return res;
-        }
+        if (res) return res;
       }
     }
   }
 
-  const { method, path } = request;
-  const response = ResponseHandler;
-  const [routerPath, queryString] = (path || "").split("?");
-  const query = queryString ? new URLSearchParams(queryString) : new URLSearchParams();
-  // Convert query parameters to an object
-  const queryObject = Object.fromEntries(query.entries());
-  request.query = queryObject;
-
+  // Route handling
   const routeHandlers = route[method] || [];
   let handler;
   let dynamicParams = {};
+
   for (const [routePattern, routeHandler] of routeHandlers) {
     if (routePattern.includes(":")) {
       dynamicParams = extractDynamicParams(routePattern, path);
@@ -43,18 +75,23 @@ export async function handleRequest(request, route, compiledMiddlewares) {
 
   if (handler) {
     try {
-      const res = await handler(request, response);
+      const res = await handler(request, ResponseHandler);
       return res;
     } catch (error) {
       console.error("Error in handler:", error);
       return ErrorHandler.internalServerError();
     }
   } else {
-    // console.error(ErrorHandler.RouteNotFoundError());
     return ErrorHandler.RouteNotFoundError();
   }
 }
 
+/**
+ * Extracts dynamic parameters from the route pattern and path.
+ * @param {string} routePattern - The route pattern with dynamic segments.
+ * @param {string} path - The actual path to extract parameters from.
+ * @returns {Object|null} - An object with dynamic parameters or null if the path does not match the pattern.
+ */
 const extractDynamicParams = (routePattern, path) => {
   const object = {};
   const routeSegments = routePattern.split("/");
