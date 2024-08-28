@@ -42,12 +42,12 @@ export async function handleRequest(request, route, compiledMiddlewares) {
   }
 
   // Path prefix middleware runs here
-  for (const [pathPrefix, middlewares] of compiledMiddlewares) {
-    if (pathPrefix !== '/' && request.path.startsWith(pathPrefix)) {
-      for (const middleware of middlewares) {
-        const res = await middleware(request, ResponseHandler, () => {});
-        if (res) return res;
-      }
+  const exactPathMiddleware = compiledMiddlewares
+  .find(([pathPrefix]) => pathPrefix === request.path);
+  if (exactPathMiddleware) {
+    for (const handler of exactPathMiddleware[1]){
+      const res = await handler(request,ResponseHandler,() => {})
+      if (res) return res;
     }
   }
 

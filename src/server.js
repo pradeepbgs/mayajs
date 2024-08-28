@@ -116,11 +116,39 @@ class Maya {
     this.middlewares[path].push(handler || pathORhandler);
   }
 
-   /**
-   * Enables body parsing for the server.
-   */
+   
+  // Enables body parsing for the server.
   bodyParse() {
     this.isBodyParse = true;
+  }
+  /**
+   * Sets the SSL/TLS options for the server.
+   * 
+   * @param {Object} options - The SSL/TLS options.
+   * @param {string} options.key - The path to the private key file.
+   * @param {string} options.cert - The path to the certificate file.
+   */
+  setSSL(options) {
+    this.sslOptions = {
+      key: fs.readFileSync(options.key),
+      cert: fs.readFileSync(options.cert)
+    };
+  }
+
+  /**
+   * Compiles the routes and middlewares for efficient lookup during request handling.
+   * This method is called internally before the server starts listening.
+   */
+  compile() {
+    // Compile routes
+    for (const method in this.routes) {
+      this.routes[method] = Object.entries(this.routes[method])
+        .sort(([, a], [, b]) => b.isImportant - a.isImportant);
+    }
+
+    // Compile middlewares
+    this.compiledMiddlewares = Object.entries(this.middlewares)
+      .sort(([a], [b]) => b.length - a.length);
   }
 
   /**
