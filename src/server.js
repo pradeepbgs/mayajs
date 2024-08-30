@@ -5,15 +5,9 @@ import fs from "fs";
 import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
 
-/**
- * @class Maya
- * A custom HTTP/S server framework.
- */
+
 
 class Maya {
-  /**
-   * Initializes the Maya server with default configurations.
-   */
 
   constructor() {
     this.sslOptions = null;
@@ -31,13 +25,7 @@ class Maya {
     this.compiledRoutes = {};
   }
 
-  /**
-   * Configures SSL/TLS for the server.
-   * 
-   * @param {Object} options - The SSL/TLS options.
-   * @param {string} options.keyPath - Path to the SSL/TLS key file.
-   * @param {string} options.certPath - Path to the SSL/TLS certificate file.
-   */
+
   useHttps(options = {}) {
     if (options.keyPath && options.certPath) {
       try {
@@ -54,10 +42,7 @@ class Maya {
       this.sslOptions = null;
     }
   }
- 
-  /**
-   * Compiles and sorts routes and middlewares for optimized processing.
-   */
+
   compile() {
     this.compiledMiddlewares = Object.entries(this.middlewares).sort(([a], [b]) => b.length - a.length);
 
@@ -71,25 +56,13 @@ class Maya {
     }
   }
 
-   /**
-   * Creates a server instance based on the SSL/TLS configuration.
-   * 
-   * @param {Function} handleConnection - The function to handle incoming connections.
-   * @returns {net.Server|tls.Server} - The created server instance.
-   */
   _createServer(handleConnection) {
     return  this.sslOptions 
       ?  tls.createServer(this.sslOptions, (socket) => handleConnection(socket))
       : net.createServer((socket) => handleConnection(socket));
   }
 
-  /**
-   * Starts the server and begins listening on the specified port.
-   * 
-   * @param {number} [port=3000] - The port number to listen on.
-   * @param {Function} [callback] - The callback to be invoked when the server starts.
-   * @returns {Promise<net.Server|tls.Server>} - A promise that resolves to the server instance.
-   */
+
   async listen(port = 3000, callback) {
     this.compile();
     const handleConnection = createConnectionHandler(this, this.isBodyParse);
@@ -103,12 +76,6 @@ class Maya {
     return server;    
   }
 
-  /**
-   * Adds a middleware function to the server.
-   * 
-   * @param {string|Function} pathORhandler - The path to apply the middleware or the middleware function directly.
-   * @param {Function} [handler] - The middleware function if the path is specified.
-   */
 
   use(pathORhandler, handler) {
     const path = typeof pathORhandler === "string" ? pathORhandler : "/";
@@ -121,13 +88,7 @@ class Maya {
   bodyParse() {
     this.isBodyParse = true;
   }
-  /**
-   * Sets the SSL/TLS options for the server.
-   * 
-   * @param {Object} options - The SSL/TLS options.
-   * @param {string} options.key - The path to the private key file.
-   * @param {string} options.cert - The path to the certificate file.
-   */
+  
   setSSL(options) {
     this.sslOptions = {
       key: fs.readFileSync(options.key),
@@ -135,47 +96,14 @@ class Maya {
     };
   }
 
-  /**
-   * Compiles the routes and middlewares for efficient lookup during request handling.
-   * This method is called internally before the server starts listening.
-   */
-  compile() {
-    // Compile routes
-    for (const method in this.routes) {
-      this.routes[method] = Object.entries(this.routes[method])
-        .sort(([, a], [, b]) => b.isImportant - a.isImportant);
-    }
-
-    // Compile middlewares
-    this.compiledMiddlewares = Object.entries(this.middlewares)
-      .sort(([a], [b]) => b.length - a.length);
-  }
-
-  /**
-   * Defines a route handler for a specified HTTP method and path.
-   * 
-   * @param {string} method - The HTTP method (e.g., GET, POST).
-   * @param {string} path - The route path.
-   * @returns {Object} - An object with methods to set route importance and handler.
-   */
   _defineRoute(method, path) {
     let isImportant = false;
     const chain = {
-      /**
-       * Marks the route as important.
-       * 
-       * @returns {Object} - The chainable object.
-       */
-
       isImportant: () => {
         isImportant = true;
         return chain;
       },
-      /**
-       * Sets the handler for the route.
-       * 
-       * @param {Function} handler - The route handler function.
-       */
+
       handler: (handler) => {
         this.routes[method][path] = { handler, isImportant };
       },
@@ -183,52 +111,26 @@ class Maya {
     return chain;
   }
 
-  /**
-   * Defines a GET route.
-   * 
-   * @param {string} path - The route path.
-   * @returns {Object} - The route definition chain.
-   */
   get(path) {
     return this._defineRoute("GET", path);
   }
 
-  /**
-   * Defines a POST route.
-   * 
-   * @param {string} path - The route path.
-   * @returns {Object} - The route definition chain.
-   */
+ 
   post(path) {
     return this._defineRoute("POST", path);
   }
 
-  /**
-   * Defines a PUT route.
-   * 
-   * @param {string} path - The route path.
-   * @returns {Object} - The route definition chain.
-   */
+
   put(path) {
     return this._defineRoute("PUT", path);
   }
 
-  /**
-   * Defines a DELETE route.
-   * 
-   * @param {string} path - The route path.
-   * @returns {Object} - The route definition chain.
-   */
+
   delete(path) {
     return this._defineRoute("DELETE", path);
   }
 
-  /**
-   * Defines a PATCH route.
-   * 
-   * @param {string} path - The route path.
-   * @returns {Object} - The route definition chain.
-   */
+
   patch(path) {
     return this._defineRoute("PATCH", path);
   }
