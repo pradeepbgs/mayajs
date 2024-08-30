@@ -43,7 +43,7 @@ class Maya {
     }
   }
 
-  compile() {
+  #compile() {
     this.compiledMiddlewares = Object.entries(this.middlewares).sort(([a], [b]) => b.length - a.length);
 
     for (const method in this.routes) {
@@ -56,7 +56,7 @@ class Maya {
     }
   }
 
-  _createServer(handleConnection) {
+  #createServer(handleConnection) {
     return  this.sslOptions 
       ?  tls.createServer(this.sslOptions, (socket) => handleConnection(socket))
       : net.createServer((socket) => handleConnection(socket));
@@ -64,10 +64,10 @@ class Maya {
 
 
   async listen(port = 3000, callback) {
-    this.compile();
+    this.#compile();
     const handleConnection = createConnectionHandler(this, this.isBodyParse);
 
-    const server = this._createServer(handleConnection);
+    const server = this.#createServer(handleConnection);
 
     server.listen(port, () => { 
       if (typeof callback === "function") return callback();
@@ -89,14 +89,8 @@ class Maya {
     this.isBodyParse = true;
   }
   
-  setSSL(options) {
-    this.sslOptions = {
-      key: fs.readFileSync(options.key),
-      cert: fs.readFileSync(options.cert)
-    };
-  }
 
-  _defineRoute(method, path) {
+  #defineRoute(method, path) {
     let isImportant = false;
     const chain = {
       isImportant: () => {
@@ -112,27 +106,27 @@ class Maya {
   }
 
   get(path) {
-    return this._defineRoute("GET", path);
+    return this.#defineRoute("GET", path);
   }
 
  
   post(path) {
-    return this._defineRoute("POST", path);
+    return this.#defineRoute("POST", path);
   }
 
 
   put(path) {
-    return this._defineRoute("PUT", path);
+    return this.#defineRoute("PUT", path);
   }
 
 
   delete(path) {
-    return this._defineRoute("DELETE", path);
+    return this.#defineRoute("DELETE", path);
   }
 
 
   patch(path) {
-    return this._defineRoute("PATCH", path);
+    return this.#defineRoute("PATCH", path);
   }
 }
 

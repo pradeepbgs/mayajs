@@ -1,7 +1,4 @@
-import Cache from "./cache.js";
-
-export function parseRequest(requestBuffer) {
-  const cache = new Cache();
+export function parseRequest(requestBuffer,cache) {
   // console.log(requestBuffer)
   const req = requestBuffer.toString();
   // console.log(requestBuffer)

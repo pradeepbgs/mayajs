@@ -2,8 +2,10 @@ import { parseRequest } from "./requestParser.js";
 import { handleRequest } from "./requestHandler.js";
 import ErrorHandler from "./errResponse.js";
 import { Buffer } from "buffer";
+import Cache from "./cache.js";
 
 export function createConnectionHandler(maya, isBodyParse) {
+  const cache = new Cache();
   return async function handleConnection(socket) {
     let buffer = Buffer.alloc(0);
     socket.on("data", async (data) => {
@@ -11,7 +13,7 @@ export function createConnectionHandler(maya, isBodyParse) {
       if (isBodyParse) {
         buffer = Buffer.concat([buffer, data]);
         if (buffer.includes(Buffer.from("\r\n\r\n"))) {
-          parsedRequest = await parseRequest(buffer);
+          parsedRequest = await parseRequest(buffer,cache);
           buffer = Buffer.alloc(0);
         } else {
           return;
