@@ -8,8 +8,8 @@ export function createConnectionHandler(maya, isBodyParse) {
   const cache = new Cache();
   return async function handleConnection(socket) {
     let buffer = Buffer.alloc(0);
+    let parsedRequest;
     socket.on("data", async (data) => {
-      let parsedRequest;
       if (isBodyParse) {
         buffer = Buffer.concat([buffer, data]);
         if (buffer.includes(Buffer.from("\r\n\r\n"))) {
@@ -22,15 +22,11 @@ export function createConnectionHandler(maya, isBodyParse) {
         parsedRequest = parseRequestWithoutBody(data);
         buffer = Buffer.alloc(0);
       }
-      if (parsedRequest.error) {
-        return parsedRequestError(socket, parsedRequest.error);
-      }
-
-      const { compiledMiddlewares, compiledRoutes } = maya;
+      
+      if (parsedRequest.error) return parsedRequestError(socket, parsedRequest.error);
 
 
-      /// this  is our old approach and better???
-      handleRequest(parsedRequest, compiledRoutes,compiledMiddlewares)
+      handleRequest(parsedRequest,maya)
         .then((responseData) => {
           socket.write(responseData || ErrorHandler.internalServerError());
           socket.end();
@@ -49,8 +45,8 @@ export function createConnectionHandler(maya, isBodyParse) {
 }
 
 function parseRequestWithoutBody(data) {
-  const requestLine = data.toString().split("\r\n")[0];
-  const [method, path] = requestLine.split(" ");
+  const [method, path] = data.toString()
+  .split("\r\n")[0].requestLine.split(" ");
   return {
     method,
     path,

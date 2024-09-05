@@ -4,6 +4,7 @@ import fs from "fs";
 
 import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
+import Trie from "./trie.js";
 
 
 
@@ -21,17 +22,17 @@ class Maya {
     this.middlewares = {};
     this.ResponseHandler = ResponseHandler;
     this.isBodyParse = false;
-    this.compiledMiddlewares = [];
     this.compiledRoutes = {};
+    this.trie = new Trie()
   }
 
 
-  useHttps(options = {}) {
+  async useHttps(options = {}) {
     if (options.keyPath && options.certPath) {
       try {
         this.sslOptions = {
-          key: fs.readFileSync(options.keyPath),
-          cert: fs.readFileSync(options.certPath)
+          key: await fs.readFileSync(options.keyPath),
+          cert: await fs.readFileSync(options.certPath)
         }
       } catch (error) {
         console.error('Error reading SSL certificate or key:', error);
@@ -44,16 +45,19 @@ class Maya {
   }
 
   #compile() {
-    this.compiledMiddlewares = Object.entries(this.middlewares).sort(([a], [b]) => b.length - a.length);
-
     for (const method in this.routes) {
-      this.compiledRoutes[method] = Object.entries(this.routes[method]).sort(([a, routeA], [b, routeB]) => {
-        // Prioritize important routes, then by path length
-        if (routeA.isImportant && !routeB.isImportant) return -1;
-        if (!routeA.isImportant && routeB.isImportant) return 1;
-        return b.length - a.length;
-      });
+      for (const [path,route] of Object.entries(this.routes[method])){
+        this.trie.insert(path,route);
+      }
     }
+
+    Object.assign(this.routes, {
+      GET: {},
+      POST: {},
+      PUT: {},
+      DELETE: {},
+      PATCH: {},
+    });
   }
 
   #createServer(handleConnection) {
@@ -63,13 +67,13 @@ class Maya {
   }
 
 
-  async listen(port = 3000, callback) {
+  async listen(port = 3000,callback) {
     this.#compile();
     const handleConnection = createConnectionHandler(this, this.isBodyParse);
 
     const server = this.#createServer(handleConnection);
 
-    server.listen(port, () => { 
+    server.listen(port,() => { 
       if (typeof callback === "function") return callback();
         console.log(`Server is running on ${this.sslOptions ? 'https' : 'http'}://localhost:${port}`);
     });

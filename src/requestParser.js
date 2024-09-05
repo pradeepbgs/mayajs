@@ -1,10 +1,10 @@
-export function parseRequest(requestBuffer,cache) {
-  // console.log(requestBuffer)
-  const req = requestBuffer.toString();
-  // console.log(requestBuffer)
+import { parseMultipartFormData } from "./multipartFormDataParser.js";
 
+export function parseRequest(requestBuffer, cache) {
+  // console.log(requestBuffer.toString());
+  const req = requestBuffer.toString();
   // Split headers and body
-  const [headerSection, body] = req.split("\r\n\r\n", 2);
+  const [headerSection, body] = req.split("\r\n\r\n");
 
   if (!headerSection) {
     return error({ error: "Invalid request format: Missing header section" });
@@ -17,6 +17,7 @@ export function parseRequest(requestBuffer,cache) {
   }
   // parse request line
   const [method, path, version] = requestLine.split(" ");
+  
   if (!method || !path || !version) {
     return error({ error: "Invalid request format: Incomplete request line" });
   }
@@ -25,7 +26,9 @@ export function parseRequest(requestBuffer,cache) {
   const queryParams = new URLSearchParams(queryString);
 
   //  generate cache key
-  const cacheKey = `${method}:${url}?${queryString}:${JSON.stringify(headerLine)}`;
+  const cacheKey = `${method}:${url}?${queryString}:${JSON.stringify(
+    headerLine
+  )}`;
 
   if (method === "GET") {
     const cachedResponse = cache.getCached(cacheKey);
@@ -49,26 +52,32 @@ export function parseRequest(requestBuffer,cache) {
   }
 
   let parsedBody;
+  let files = {};
   const contentType = headers["content-type"];
   if (body) {
-    if (contentType === "application/json") {
+    if (contentType.startsWith("application/json")) {
       try {
         parsedBody = JSON.parse(body);
       } catch (error) {
         return { error: "Invalid JSON format" };
       }
-    } else if (contentType === "application/x-www-form-urlencoded") {
+    } else if (contentType.startsWith("application/x-www-form-urlencoded")) {
       parsedBody = Object.fromEntries(new URLSearchParams(body));
+    } else if (contentType.startsWith("multipart/form-data")) {
+      const boundary = contentType.split("boundary=")[1];
+      const { fields, files: parsedFiles } = parseMultipartFormData(
+        req,
+        boundary
+      );
+      parsedBody = fields;
+      files = parsedFiles;
     } else {
       parsedBody = body;
     }
   }
+ 
+  let user;
 
-  const queryParamsObject = {};
-  for (const [key, value] of queryParams.entries()) {
-    queryParamsObject[key] = value;
-  }
-  const user = null;
   const res = {
     method,
     path: decodeURIComponent(path),
@@ -77,7 +86,8 @@ export function parseRequest(requestBuffer,cache) {
     body: parsedBody,
     query: queryParams,
     Cookies,
-    user
+    user,
+    files,
   };
 
   if (method === "GET") {
