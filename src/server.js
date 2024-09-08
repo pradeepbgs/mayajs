@@ -6,10 +6,7 @@ import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
 import Trie from "./trie.js";
 
-
-
 class Maya {
-
   constructor() {
     this.sslOptions = null;
     this.routes = {
@@ -23,19 +20,19 @@ class Maya {
     this.ResponseHandler = ResponseHandler;
     this.isBodyParse = false;
     this.compiledRoutes = {};
-    this.trie = new Trie()
+    this.corsConfig = null;
+    this.trie = new Trie();
   }
-
 
   async useHttps(options = {}) {
     if (options.keyPath && options.certPath) {
       try {
         this.sslOptions = {
           key: await fs.readFileSync(options.keyPath),
-          cert: await fs.readFileSync(options.certPath)
-        }
+          cert: await fs.readFileSync(options.certPath),
+        };
       } catch (error) {
-        console.error('Error reading SSL certificate or key:', error);
+        console.error("Error reading SSL certificate or key:", error);
         this.sslOptions = null;
       }
     } else {
@@ -46,8 +43,8 @@ class Maya {
 
   #compile() {
     for (const method in this.routes) {
-      for (const [path,route] of Object.entries(this.routes[method])){
-        this.trie.insert(path,route);
+      for (const [path, route] of Object.entries(this.routes[method])) {
+        this.trie.insert(path, route);
       }
     }
 
@@ -61,25 +58,23 @@ class Maya {
   }
 
   #createServer(handleConnection) {
-    return  this.sslOptions 
-      ?  tls.createServer(this.sslOptions, (socket) => handleConnection(socket))
+    return this.sslOptions
+      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket))
       : net.createServer((socket) => handleConnection(socket));
   }
 
-
-  async listen(port = 3000,callback) {
+  async listen(port = 3000, callback) {
     this.#compile();
     const handleConnection = createConnectionHandler(this, this.isBodyParse);
 
     const server = this.#createServer(handleConnection);
 
-    server.listen(port,() => { 
+    server.listen(port, () => {
       if (typeof callback === "function") return callback();
-        console.log(`Server is running on ${this.sslOptions ? 'https' : 'http'}://localhost:${port}`);
+      console.log(`Server is running on ${this.sslOptions ? "https" : "http"}://localhost:${port}`);
     });
-    return server;    
+    return server;
   }
-
 
   use(pathORhandler, handler) {
     const path = typeof pathORhandler === "string" ? pathORhandler : "/";
@@ -87,12 +82,16 @@ class Maya {
     this.middlewares[path].push(handler || pathORhandler);
   }
 
-   
+  // cors config
+
+  cors(config){
+    this.corsConfig = config;
+  }
+
   // Enables body parsing for the server.
   bodyParse() {
     this.isBodyParse = true;
   }
-  
 
   #defineRoute(method, path) {
     let isImportant = false;
@@ -113,21 +112,17 @@ class Maya {
     return this.#defineRoute("GET", path);
   }
 
- 
   post(path) {
     return this.#defineRoute("POST", path);
   }
-
 
   put(path) {
     return this.#defineRoute("PUT", path);
   }
 
-
   delete(path) {
     return this.#defineRoute("DELETE", path);
   }
-
 
   patch(path) {
     return this.#defineRoute("PATCH", path);

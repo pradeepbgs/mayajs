@@ -75,17 +75,16 @@ export function parseRequest(requestBuffer, cache) {
       parsedBody = body;
     }
   }
- 
   let user;
 
   const res = {
     method,
-    path: decodeURIComponent(path),
+    path: path,
     version,
-    headers,
+    headers,  
     body: parsedBody,
     query: queryParams,
-    Cookies,
+    cookies:Cookies,
     user,
     files,
   };

@@ -3,7 +3,6 @@ Here are a few areas where we could potentially optimize the provided code:
 1. **Middleware Compilation**: The `#compile()` method is responsible for sorting the middleware and route handlers. This sorting operation could be improved by using a more efficient sorting algorithm, such as a faster comparison-based sorting algorithm like quicksort or timsort.
 
 2. **Middleware Lookup**: The current implementation stores middleware functions in an object, where the keys are the paths. This means that for each middleware lookup, the code has to iterate through the object to find the matching middleware. A more efficient data structure, such as a trie or a prefix tree, could be used to store the middleware and improve the lookup performance.
-
 2. done -> added trie ds
 
 3. **Route Lookup**: Similar to the middleware lookup, the current implementation stores route handlers in an object, which can lead to inefficient lookups, especially for larger route sets. A more efficient data structure, such as a trie or a radix tree, could be used to store the routes and improve the lookup performance.

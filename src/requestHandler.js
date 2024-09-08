@@ -9,6 +9,13 @@ export async function handleRequest(request, maya) {
   const query = new URLSearchParams(queryString || "");
   request.query = Object.fromEntries(query.entries());
 
+
+  // if  corsconfig is enabled then--->
+  if(maya.corsConfig){
+    const res = await applyCors(request,ResponseHandler,maya.corsConfig)
+    if(res) return res;
+  }
+
   // Global middleware runs here
   const globalMiddleware = maya.middlewares['/'] || []
   if (globalMiddleware) {
@@ -27,7 +34,7 @@ export async function handleRequest(request, maya) {
     }
   }
 
-  // Route handling
+  // find the Handler based on req path 
   const routeHandler = maya.trie.search(routerPath);
   if (!routerPath) {
     return ErrorHandler.RouteNotFoundError();
@@ -46,7 +53,7 @@ export async function handleRequest(request, maya) {
     }
   
 
-
+// if we found handler then call the handler(means controller)
   if (handler) {
     try {
       const res = await handler(request, ResponseHandler);
@@ -60,7 +67,7 @@ export async function handleRequest(request, maya) {
   }
 }
 
-
+// if user made dynamic rooute -> /route/:id then extract it
 const extractDynamicParams = (routePattern, path) => {
   const object = {};
   const routeSegments = routePattern.split("/");
@@ -78,4 +85,35 @@ const extractDynamicParams = (routePattern, path) => {
   });
 
   return object;
+};
+
+// we are applying cors here 
+const applyCors = (req, res, config) => {
+  const origin = req.headers['origin']; // Get the origin of the request
+  const allowedOrigins = config?.origin ?? '*'; // Default to '*' if not provided
+  const allowedMethods = config?.methods ?? 'GET,POST,PUT,DELETE,OPTIONS';
+  const allowedHeaders = config?.headers ?? ['Content-Type', 'Authorization'];
+
+  // If allowedOrigins is '*', you can directly allow the request
+  if (allowedOrigins.includes('*')) {
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow any origin
+  } else {
+    // If specific origins are allowed, check if the origin is in the list
+    if (!origin || !allowedOrigins.includes(origin)) {
+      return res.send('Not allowed by CORS'); // Block if origin not allowed
+    }
+    res.setHeader('Access-Control-Allow-Origin', origin); // Set specific origin
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', allowedMethods);
+  res.setHeader('Access-Control-Allow-Headers', allowedHeaders);
+
+  // Preflight request handling (OPTIONS method)
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Max-Age', '86400'); // Cache the preflight response for 24 hours
+    return res.send('',204); // Send 204 (No Content) for preflight requests
+  }
+
+  // Proceed with the actual request (GET, POST, PUT, DELETE)
+  return null;
 };

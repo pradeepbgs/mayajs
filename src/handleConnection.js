@@ -29,10 +29,9 @@ export function createConnectionHandler(maya, isBodyParse) {
       handleRequest(parsedRequest,maya)
         .then((responseData) => {
           socket.write(responseData || ErrorHandler.internalServerError());
-          socket.end();
+          socket.end(); 
         })
         .catch((err) => {
-          console.error("Error handling request:", err);
           socket.write(ErrorHandler.internalServerError());
           socket.end();
         });
