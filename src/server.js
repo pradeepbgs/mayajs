@@ -21,6 +21,7 @@ class Maya {
     this.isBodyParse = false;
     this.compiledRoutes = {};
     this.corsConfig = null;
+    this.staticFileServeLocation = null;
     this.trie = new Trie();
   }
 
@@ -41,21 +42,22 @@ class Maya {
     }
   }
 
-  #compile() {
-    for (const method in this.routes) {
-      for (const [path, route] of Object.entries(this.routes[method])) {
-        this.trie.insert(path, route);
-      }
-    }
+  // since we already inserting path and handler in defineRoute func
+  // #compile() {
+  //   for (const method in this.routes) {
+  //     for (const [path, route] of Object.entries(this.routes[method])) {
+  //       this.trie.insert(path, route);
+  //     }
+  //   }
 
-    Object.assign(this.routes, {
-      GET: {},
-      POST: {},
-      PUT: {},
-      DELETE: {},
-      PATCH: {},
-    });
-  }
+  //   Object.assign(this.routes, {
+  //     GET: {},
+  //     POST: {},
+  //     PUT: {},
+  //     DELETE: {},
+  //     PATCH: {},
+  //   });
+  // }
 
   #createServer(handleConnection) {
     return this.sslOptions
@@ -64,7 +66,14 @@ class Maya {
   }
 
   async listen(port = 3000, callback) {
-    this.#compile();
+    // this.#compile();
+    Object.assign(this.routes, {
+      GET: {},
+      POST: {},
+      PUT: {},
+      DELETE: {},
+      PATCH: {},
+    });
     const handleConnection = createConnectionHandler(this, this.isBodyParse);
 
     const server = this.#createServer(handleConnection);
@@ -93,6 +102,11 @@ class Maya {
     this.isBodyParse = true;
   }
 
+  // set the path of serving static file
+  serveStatic(path){
+    this.staticFileServeLocation = path;
+  }
+
   #defineRoute(method, path) {
     let isImportant = false;
     const chain = {
@@ -102,8 +116,7 @@ class Maya {
       },
 
       handler: (handler) => {
-        this.routes[method][path] = { handler, isImportant };
-      },
+        this.trie.insert(path, { handler, isImportant, method });      },
     };
     return chain;
   }

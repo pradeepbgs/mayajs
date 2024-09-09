@@ -33,6 +33,11 @@ class ResponseHandler {
     return this._generateResponse(data, statusCode, statusMessage);
   }
 
+  render(){
+    // it can render html solo and ejs with some data ->
+    
+  }
+
   
   redirect(url, statusCode = 302) {
     return this._generateResponse("", statusCode, "Found", "text/plain", { Location: url });

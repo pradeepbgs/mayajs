@@ -24,9 +24,8 @@ export function parseRequest(requestBuffer, cache) {
 
   const [url, queryString] = path.split("?", 2);
   const queryParams = new URLSearchParams(queryString);
-
   //  generate cache key
-  const cacheKey = `${method}:${url}?${queryString}:${JSON.stringify(
+  const cacheKey = `${method}:${url}?${queryParams}:${JSON.stringify(
     headerLine
   )}`;
 
@@ -76,19 +75,20 @@ export function parseRequest(requestBuffer, cache) {
     }
   }
   let user;
-
+  let params
+  const query = {...queryParams}
   const res = {
     method,
     path: path,
     version,
     headers,  
     body: parsedBody,
-    query: queryParams,
+    query,
+    params,
     cookies:Cookies,
     user,
     files,
   };
-
   if (method === "GET") {
     cache.setCache(cacheKey, res);
   }

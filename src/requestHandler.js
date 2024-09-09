@@ -45,7 +45,7 @@ export async function handleRequest(request, maya) {
   if (routeHandler?.isDynamic) {
       dynamicParams = extractDynamicParams(routeHandler.path, path);
       if (dynamicParams) {
-        request.query = { ...request.query, ...dynamicParams };
+        request.params = dynamicParams;
         handler = routeHandler.handler;
       }
     } else if (routeHandler?.path === routerPath) {
@@ -71,12 +71,14 @@ export async function handleRequest(request, maya) {
 const extractDynamicParams = (routePattern, path) => {
   const object = {};
   const routeSegments = routePattern.split("/");
-  const pathSegments = path.split("/");
+  const [pathWithoutQuery] = path.split('?'); // Ignore the query string in the path
+  const pathSegments = pathWithoutQuery.split("/"); // Re-split after removing query
+
 
   if (routeSegments.length !== pathSegments.length) {
     return null; // Path doesn't match the pattern
   }
-
+ 
   routeSegments.forEach((segment, index) => {
     if (segment.startsWith(":")) {
       const dynamicKey = segment.slice(1); // Remove ':' to get the key name
@@ -87,6 +89,8 @@ const extractDynamicParams = (routePattern, path) => {
   return object;
 };
 
+
+
 // we are applying cors here 
 const applyCors = (req, res, config) => {
   const origin = req.headers['origin']; // Get the origin of the request
@@ -95,7 +99,7 @@ const applyCors = (req, res, config) => {
   const allowedHeaders = config?.headers ?? ['Content-Type', 'Authorization'];
 
   // If allowedOrigins is '*', you can directly allow the request
-  if (allowedOrigins.includes('*')) {
+  if (allowedOrigins.includes('*') || allowedOrigins === '*') {
     res.setHeader('Access-Control-Allow-Origin', '*'); // Allow any origin
   } else {
     // If specific origins are allowed, check if the origin is in the list
