@@ -1,7 +1,6 @@
 import Maya from "../src/server.js";
-import { register } from "./controller/user.controller.js";
-import { hello, sm, user1, user2 } from "./hello.js";
 import { userRoutes } from "./routes/user.route.js";
+
 
 const maya = new Maya();
 const port = 3000;
@@ -33,10 +32,10 @@ maya.cors({
 //   .handler((req, res) => {
 //     return res.json({ msg: "Hello ji kaise ho sare" });
 //   });
-// maya.get("/").handler((req, res) => {
-//   const k = req.query;
-//   return res.json({ msg: "Hello", name: k.name, age: k.age });
-// });
+maya.get("/").handler((req, res) => {
+  const k = req.query;
+  return res.json({ msg: "Hello", name: k.name, age: k.age });
+});
 
 // maya.get("/user").handler((req, res) => {
 //   return res.json({ msg: "hello" });
@@ -86,20 +85,18 @@ maya.cors({
 //   return res.json({ msg: "here is ur name", name });
 // });
 
-// maya.get("/set-cookie").handler((req, res) => {
-//   // Set a cookie
-//   const cookieOptions = {
-//     expires: new Date(Date.now() + 86400000), // 1 day
-//     httpOnly: true,
-//   };
-//   res.cookie('myCookie', 'cookieValue', cookieOptions);
+maya.get("/set-cookie").handler((req, res) => {
+  // Set a cookie
+  const cookieOptions = {
+    expires: new Date(Date.now() + 86400000), // 1 day
+    httpOnly: true,
+  };
+  res.cookie('myCookie', 'cookieValue', cookieOptions);
+  // Return a response
+  return res.json({ msg: "Cookie has been set" },204);
+});
 
-//   // Return a response
-//   return res.json({ msg: "Cookie has been set" });
-// });
-
-userRoutes();
-
+userRoutes(maya,'/api/user')
 
 maya.listen(port);
 

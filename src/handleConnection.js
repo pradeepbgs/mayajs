@@ -44,8 +44,8 @@ export function createConnectionHandler(maya, isBodyParse) {
 }
 
 function parseRequestWithoutBody(data) {
-  const [method, path] = data.toString()
-  .split("\r\n")[0].requestLine.split(" ");
+  const requestLine = data.toString().split("\r\n")[0];
+  const [method, path] = requestLine.split(" ");
   return {
     method,
     path,

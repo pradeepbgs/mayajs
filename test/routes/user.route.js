@@ -1,13 +1,10 @@
-import { register } from "../controller/user.controller.js";
-import { maya } from "../test.js";
-export async function userRoutes(){
-    maya.post('/api/v1/user/register')
-    .isImportant()
-    .handler(register);
 
-    maya.get('/api/v1/user/:id')
-        .handler((req, res) => {
-            const userId = req.params.id;
-            return res.json({ userId });
-        });
+export const userRoutes =  (maya,path) => {
+    maya.get(`${path}/register`).handler((req,res) => {
+        return res.json({msg:"hii"})
+    })
+
+    maya.get(`${path}/login`).handler((req,res) => {
+        return res.json({msg:"hii"})
+    })
 }

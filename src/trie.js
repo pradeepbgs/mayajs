@@ -90,6 +90,33 @@ class Trie {
     } : null;
   }
   
+
+    // New getAllRoutes method
+
+  getAllRoutes() {
+    const routes = [];
+    // Helper function to recursively collect all routes
+    const traverse = (node, currentPath) => {
+      if (node.isEndOfWord) {
+        routes.push({
+          path: currentPath,
+          handler: node.handler,
+          isImportant: node.isImportant,
+          isDynamic: node.isDynamic,
+          pattern: node.pattern,
+        });
+      }
+      // Recursively traverse all children
+      for (const key in node.children) {
+        const child = node.children[key];
+        const newPath = currentPath + (key === ':' ? '/:' + child.pattern : '/' + key); // Reconstruct the full path
+        traverse(child, newPath);
+      }
+    };
+    // Start traversal from the root
+    traverse(this.root, "");
+    return routes;
+  }
 }
 
 export default Trie;

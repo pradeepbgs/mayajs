@@ -121,6 +121,26 @@ class Maya {
     return chain;
   }
 
+  
+  // register(handlerInstance, pathPrefix = "") {
+  //   console.log(handlerInstance);
+  //   if (typeof handlerInstance === 'function') {
+  //     handlerInstance(this, pathPrefix);
+  //   } else if (typeof handlerInstance === 'object') {
+  //     for (const [method, routes] of Object.entries(handlerInstance)) {
+  //       for (const [path, handler] of Object.entries(routes)) {
+  //         const fullPath = this.#joinPaths(pathPrefix, path);
+  //         this.#defineRoute(method.toUpperCase(), fullPath).handler(handler);
+  //       }
+  //     }
+  //   }
+  // }
+
+  // #joinPaths(...paths) {
+  //   return '/' + paths.map(path => path.replace(/^\/|\/$/g, '')).filter(Boolean).join('/');
+  // }
+  
+
   get(path) {
     return this.#defineRoute("GET", path);
   }
