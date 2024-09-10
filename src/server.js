@@ -114,9 +114,9 @@ class Maya {
         isImportant = true;
         return chain;
       },
-
       handler: (handler) => {
-        this.trie.insert(path, { handler, isImportant, method });      },
+        this.trie.insert(path, { handler, isImportant, method })
+      }
     };
     return chain;
   }

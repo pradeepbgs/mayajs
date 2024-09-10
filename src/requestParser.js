@@ -28,10 +28,10 @@ export function parseRequest(requestBuffer, cache) {
   const cacheKey = `${method}:${url}?${queryParams}:${JSON.stringify(
     headerLine
   )}`;
-
   if (method === "GET") {
     const cachedResponse = cache.getCached(cacheKey);
     if (cachedResponse) {
+      // console.log(cachedResponse)
       return cachedResponse;
     }
   }
@@ -74,16 +74,21 @@ export function parseRequest(requestBuffer, cache) {
       parsedBody = body;
     }
   }
+  // we are putting empty user so in middleware
+  // user can req.user = {data}
   let user;
+  // we are setting empty params here so in reqHandler.js 
+  // we see if handler is dynamic then we extract the dynamic value
+  // and put in req.param = extractedDynamicValue
   let params
-  const query = {...queryParams}
+
   const res = {
     method,
     path: path,
     version,
     headers,  
     body: parsedBody,
-    query,
+    query:queryParams,
     params,
     cookies:Cookies,
     user,
