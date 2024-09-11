@@ -1,5 +1,5 @@
 import Maya from "../src/server.js";
-import { userRoutes } from "./routes/user.route.js";
+import userRoutes from "./routes/user.route.js";
 
 
 const maya = new Maya();
@@ -8,11 +8,11 @@ const port = 3000;
 // this means our server will now parse the incoming req body
 maya.bodyParse();
 
-maya.cors({
-  origin: ['http://localhost:8000','*'],
-  methods: 'GET,POST,PUT,DELETE',
-  headers: 'Content-Type,Authorization'
-})
+// maya.cors({
+//   origin: ['http://localhost:8000','*'],
+//   methods: 'GET,POST,PUT,DELETE',
+//   headers: 'Content-Type,Authorization'
+// })
 // if u want to use https then use this and pass the path of your key and cert file
 // maya.useHttps({
 //   keyPath: 'path/to/key.pem',
@@ -86,17 +86,21 @@ maya.get("/").handler((req, res) => {
 // });
 
 maya.get("/set-cookie").handler((req, res) => {
-  // Set a cookie
   const cookieOptions = {
     expires: new Date(Date.now() + 86400000), // 1 day
     httpOnly: true,
   };
   res.cookie('myCookie', 'cookieValue', cookieOptions);
-  // Return a response
-  return res.json({ msg: "Cookie has been set" },204);
+  return res.json({ msg: "Cookie has been set" }, 200); // Status 200 to include a JSON body
 });
 
-userRoutes(maya,'/api/user')
+
+maya.get("/post").isImportant().handler((req,res) => {
+  return res.send("hii")
+})
+
+
+maya.register(userRoutes,"/api/user")
 
 maya.listen(port);
 

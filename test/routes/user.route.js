@@ -1,10 +1,15 @@
+import Router from '../../src/router.js'
 
-export const userRoutes =  (maya,path) => {
-    maya.get(`${path}/register`).handler((req,res) => {
-        return res.json({msg:"hii"})
+const maya = new Router()
+// export const userRoutes =  (maya,path) => {
+    maya.get(`/register`).handler((req,res) => {
+        return res.json({msg:"hii im register route"})
     })
 
-    maya.get(`${path}/login`).handler((req,res) => {
-        return res.json({msg:"hii"})
+    maya.get(`/login`).handler((req,res) => {
+        return res.json({msg:"hii im login route"})
     })
-}
+
+// }
+
+export default maya;

@@ -9,13 +9,13 @@ import Trie from "./trie.js";
 class Maya {
   constructor() {
     this.sslOptions = null;
-    this.routes = {
-      GET: {},
-      POST: {},
-      PUT: {},
-      DELETE: {},
-      PATCH: {},
-    };
+    // this.routes = {
+    //   GET: {},
+    //   POST: {},
+    //   PUT: {},
+    //   DELETE: {},
+    //   PATCH: {},
+    // };
     this.middlewares = {};
     this.ResponseHandler = ResponseHandler;
     this.isBodyParse = false;
@@ -67,13 +67,13 @@ class Maya {
 
   async listen(port = 3000, callback) {
     // this.#compile();
-    Object.assign(this.routes, {
-      GET: {},
-      POST: {},
-      PUT: {},
-      DELETE: {},
-      PATCH: {},
-    });
+    // Object.assign(this.routes, {
+    //   GET: {},
+    //   POST: {},
+    //   PUT: {},
+    //   DELETE: {},
+    //   PATCH: {},
+    // });
     const handleConnection = createConnectionHandler(this, this.isBodyParse);
 
     const server = this.#createServer(handleConnection);
@@ -122,25 +122,21 @@ class Maya {
   }
 
   
-  // register(handlerInstance, pathPrefix = "") {
-  //   console.log(handlerInstance);
-  //   if (typeof handlerInstance === 'function') {
-  //     handlerInstance(this, pathPrefix);
-  //   } else if (typeof handlerInstance === 'object') {
-  //     for (const [method, routes] of Object.entries(handlerInstance)) {
-  //       for (const [path, handler] of Object.entries(routes)) {
-  //         const fullPath = this.#joinPaths(pathPrefix, path);
-  //         this.#defineRoute(method.toUpperCase(), fullPath).handler(handler);
-  //       }
-  //     }
-  //   }
-  // }
+  register(handlerInstance, pathPrefix = "") {
+    const h = Object.entries(handlerInstance.trie.root.children)
+    for (const [key , val] of h) {
+      const fullpath = pathPrefix+val?.path;
+      const handler = val.handler;
+      const isImportant = val.isImportant
+      const method = val.method;
+      this.trie.insert(fullpath,{handler,isImportant,method})
+    }
+  }
 
   // #joinPaths(...paths) {
   //   return '/' + paths.map(path => path.replace(/^\/|\/$/g, '')).filter(Boolean).join('/');
   // }
   
-
   get(path) {
     return this.#defineRoute("GET", path);
   }

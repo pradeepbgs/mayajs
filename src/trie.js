@@ -7,6 +7,7 @@ class TrieNode {
     this.isDynamic = false;
     this.pattern = '';
     this.path = "";
+    this.method = "";
   }
 }
 
@@ -25,6 +26,7 @@ class Trie {
       node.handler = route.handler;
       node.isImportant = route.isImportant;
       node.path = path;
+      node.method =  route.method
       return;
     }
   
@@ -50,6 +52,7 @@ class Trie {
   
     // After looping through the entire path, assign route details
     node.isEndOfWord = true;
+    node.method = route.method;
     node.handler = route.handler;
     node.isImportant = route.isImportant;
     node.path = path;  // Store the original path
@@ -87,6 +90,7 @@ class Trie {
       isImportant: node.isImportant,
       isDynamic: node.isDynamic,
       pattern: node.pattern,
+      method:node.method
     } : null;
   }
   

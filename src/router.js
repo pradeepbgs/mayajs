@@ -3,16 +3,9 @@ import Trie from "./trie.js";
 
 
 
-class Router{
+class Router extends Maya{
     constructor() {
-        this.routes = {
-            GET: {},
-            POST: {},
-            PUT: {},
-            DELETE: {},
-            PATCH: {},
-          };
-          this.trie = new Trie()
+      super()
     }
 
     #defineRoute(method, path) {

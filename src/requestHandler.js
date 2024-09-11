@@ -36,6 +36,11 @@ export async function handleRequest(request, maya) {
 
   // find the Handler based on req path 
   const routeHandler = maya.trie.search(routerPath);
+
+  if (routeHandler?.method !== method) {
+    return ErrorHandler.methodNotAllowedError();
+  }
+
   if (!routerPath) {
     return ErrorHandler.RouteNotFoundError();
   }
