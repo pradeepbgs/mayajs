@@ -22,5 +22,5 @@ export const user1 = (req, res, next) => {
 
 export const user2 = (req, res, next) => {
   console.log("user2");
-  return res.send("hello from");
+  // return res.send("hello from");
 };

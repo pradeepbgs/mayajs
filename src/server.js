@@ -114,7 +114,12 @@ class Maya {
         isImportant = true;
         return chain;
       },
-      handler: (handler) => {
+      handler: (...handler) => {
+        this.middlewares[path] = this.middlewares[path] || [];
+        for(let i =0; i<handler.length-1;i++){
+          this.middlewares[path].push(handler[i])
+        }
+        handler = handler[handler.length-1];
         this.trie.insert(path, { handler, isImportant, method })
       }
     };

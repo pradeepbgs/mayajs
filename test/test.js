@@ -1,4 +1,5 @@
 import Maya from "../src/server.js";
+import { hello, sm, user2 } from "./hello.js";
 import userRoutes from "./routes/user.route.js";
 
 
@@ -6,7 +7,7 @@ const maya = new Maya();
 const port = 3000;
 
 // this means our server will now parse the incoming req body
-maya.bodyParse();
+// maya.bodyParse();
 
 // maya.cors({
 //   origin: ['http://localhost:8000','*'],
@@ -19,9 +20,10 @@ maya.bodyParse();
 //   certPath: 'patha/to/cert.pem'
 // })
 // this is a middleware example
-// maya.use(sm);
 // maya.use(hello);
-// maya.use("/api/v1/user/register", register);
+// maya.use(sm);
+// maya.use("/post",user2)
+// // maya.use("/api/v1/user/register", register);
 // maya.use("/user", user2);
 
 
@@ -34,7 +36,9 @@ maya.bodyParse();
 //   });
 maya.get("/").handler((req, res) => {
   const k = req.query;
-  return res.json({ msg: "Hello", name: k.name, age: k.age });
+  // console.log('hiii');
+   return res.json({ msg: "Hello"});
+  //  next()
 });
 
 // maya.get("/user").handler((req, res) => {
@@ -85,22 +89,25 @@ maya.get("/").handler((req, res) => {
 //   return res.json({ msg: "here is ur name", name });
 // });
 
-maya.get("/set-cookie").handler((req, res) => {
-  const cookieOptions = {
-    expires: new Date(Date.now() + 86400000), // 1 day
-    httpOnly: true,
-  };
-  res.cookie('myCookie', 'cookieValue', cookieOptions);
-  return res.json({ msg: "Cookie has been set" }, 200); // Status 200 to include a JSON body
-});
+// maya.get("/set-cookie").handler((req, res) => {
+//   const cookieOptions = {
+//     expires: new Date(Date.now() + 86400000), // 1 day
+//     httpOnly: true,
+//   };
+//   res.cookie('myCookie', 'cookieValue', cookieOptions);
+//   return res.json({ msg: "Cookie has been set" }, 200); // Status 200 to include a JSON body
+// });
 
 
-maya.get("/post").isImportant().handler((req,res) => {
-  return res.send("hii")
-})
+// maya.get("/post").isImportant().handler((req,res) => {
+//   return res.send("hii")
+// })
 
+// maya.get("/test").isImportant().handler((req,res) => {
+//   return res.send("hii")
+// })
 
-maya.register(userRoutes,"/api/user")
+// maya.register(userRoutes,"/api/user")
 
 maya.listen(port);
 

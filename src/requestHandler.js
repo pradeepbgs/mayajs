@@ -16,34 +16,43 @@ export async function handleRequest(request, maya) {
     if(res) return res;
   }
 
-  // Global middleware runs here
-  const globalMiddleware = maya.middlewares['/'] || []
-  if (globalMiddleware) {
-    for (const handler of globalMiddleware) {
-      const res = await handler(request, ResponseHandler, () => {});
-      if (res) return res;
-    }
-  }
+  // // Global middleware runs here
+  // const globalMiddleware = maya.middlewares['/'] || []
+  // if (globalMiddleware) {
+  //   for (const handler of globalMiddleware) {
+  //     const res = await handler(request, ResponseHandler, () => {});
+  //     if (res) return res;
+  //   }
+  // }
 
-  // Path prefix middleware runs here
-  const exactPathMiddleware = maya.middlewares[request.path] || []
-  if (exactPathMiddleware) {
-    for (const handler of exactPathMiddleware){
-      const res = await handler(request,ResponseHandler,() => {})
-      if (res) return res;
-    }
-  }
+  // // Path prefix middleware runs here
+  // const exactPathMiddleware = maya.middlewares[request.path] || []
+  // if (exactPathMiddleware) {
+  //   for (const handler of exactPathMiddleware){
+  //     const res = await handler(request,ResponseHandler,() => {})
+  //     if (res) return res;
+  //   }
+  // }
+
+  // we can combine all midl in one 
+  const globalMiddleware = await maya.middlewares['/'] || [];
+  const exactPathMiddleware = await maya.middlewares[request.path] || [];
+  const allMiddlewares = [...globalMiddleware, ...exactPathMiddleware];
+
+  const middlewareResponse = await executeMiddleware(allMiddlewares,request,ResponseHandler)
+  if(middlewareResponse) return middlewareResponse;
 
   // find the Handler based on req path 
   const routeHandler = maya.trie.search(routerPath);
+
+  if (!routerPath || !routeHandler) {
+    return ErrorHandler.RouteNotFoundError();
+  }
 
   if (routeHandler?.method !== method) {
     return ErrorHandler.methodNotAllowedError();
   }
 
-  if (!routerPath) {
-    return ErrorHandler.RouteNotFoundError();
-  }
   let handler;
   let dynamicParams = {};
 
@@ -61,7 +70,7 @@ export async function handleRequest(request, maya) {
 // if we found handler then call the handler(means controller)
   if (handler) {
     try {
-      const res = await handler(request, ResponseHandler);
+      const res = await handler(request, ResponseHandler, () =>{});
       return res;
     } catch (error) {
       console.error("Error in handler:", error);
@@ -97,32 +106,33 @@ const extractDynamicParams = (routePattern, path) => {
 
 
 // we are applying cors here 
-const applyCors = (req, res, config) => {
-  const origin = req.headers['origin']; // Get the origin of the request
-  const allowedOrigins = config?.origin ?? '*'; // Default to '*' if not provided
-  const allowedMethods = config?.methods ?? 'GET,POST,PUT,DELETE,OPTIONS';
-  const allowedHeaders = config?.headers ?? ['Content-Type', 'Authorization'];
-
-  // If allowedOrigins is '*', you can directly allow the request
-  if (allowedOrigins.includes('*') || allowedOrigins === '*') {
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Allow any origin
-  } else {
-    // If specific origins are allowed, check if the origin is in the list
-    if (!origin || !allowedOrigins.includes(origin)) {
-      return res.send('Not allowed by CORS'); // Block if origin not allowed
-    }
-    res.setHeader('Access-Control-Allow-Origin', origin); // Set specific origin
-  }
+const applyCors = (req, res, config={}) => {
+  const origin = req.headers['origin']
+  const allowedOrigins = config.origin || '*'; 
+  const allowedMethods = config.methods || 'GET,POST,PUT,DELETE,OPTIONS';
+  const allowedHeaders = config.headers || ['Content-Type', 'Authorization'];
 
   res.setHeader('Access-Control-Allow-Methods', allowedMethods);
   res.setHeader('Access-Control-Allow-Headers', allowedHeaders);
 
-  // Preflight request handling (OPTIONS method)
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Max-Age', '86400'); // Cache the preflight response for 24 hours
-    return res.send('',204); // Send 204 (No Content) for preflight requests
+  if (!allowedOrigins.includes('*') || !allowedOrigins === '*' &&
+  !allowedOrigins.includes(origin)
+  ) {
+    return res.send("cors not allowed")
   }
 
-  // Proceed with the actual request (GET, POST, PUT, DELETE)
+  if (origin === "OPTIONS") {
+    res.setHeader('Access-Control-Max-Age', '86400');
+    return res.send('',204);
+  }
+  
   return null;
 };
+
+async function executeMiddleware(middlewares, req, res) {
+  for (const handler of middlewares) {
+    const result = await handler(req, res, () => {});
+    if (result) return result;
+  }
+  return null;
+}

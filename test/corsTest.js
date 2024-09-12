@@ -1,6 +1,6 @@
 import axios from "axios";
 
-axios.post('http://localhost:3000/test', {
+axios.get('http://localhost:3000/test', {
   name:"nameeeee"
 }, {
   headers: {
