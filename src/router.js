@@ -7,6 +7,7 @@ class Router extends Maya{
     constructor() {
       super()
     }
+    
 
     #defineRoute(method, path) {
         let isImportant = false;

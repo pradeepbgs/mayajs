@@ -107,7 +107,7 @@ maya.get("/").handler((req, res) => {
 //   return res.send("hii")
 // })
 
-// maya.register(userRoutes,"/api/user")
+maya.register(userRoutes,"/api/user")
 
 maya.listen(port);
 

@@ -136,6 +136,7 @@ class Maya {
       const method = val.method;
       this.trie.insert(fullpath,{handler,isImportant,method})
     }
+    handlerInstance.trie = new Trie();
   }
 
   // #joinPaths(...paths) {
