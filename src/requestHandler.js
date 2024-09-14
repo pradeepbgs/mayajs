@@ -9,7 +9,6 @@ export async function handleRequest(request, maya) {
   const query = new URLSearchParams(queryString || "");
   request.query = Object.fromEntries(query.entries());
 
-
   // if  corsconfig is enabled then--->
   if(maya.corsConfig){
     const res = await applyCors(request,ResponseHandler,maya.corsConfig)
@@ -69,6 +68,7 @@ export async function handleRequest(request, maya) {
 
 // if we found handler then call the handler(means controller)
   if (handler) {
+    console.log('object');
     try {
       const res = await handler(request, ResponseHandler, () =>{});
       return res;
