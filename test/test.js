@@ -47,7 +47,7 @@ maya.get("/user").handler((req, res) => {
   return res.json({ msg: "hello" });
 });
 
-maya.get('/render').handler((req,res) => {
+maya.get('/render').handler(async(req,res) => {
   return res.render("static/index.html")
 })
 
@@ -115,6 +115,12 @@ maya.get('/render').handler((req,res) => {
 
 maya.register(userRoutes,"/api/user")
 
-maya.listen(port);
+;(async() => {
+  try {
+    await maya.listen(port);
+  } catch (error) {
+    console.error(error)
+  }
+})()
 
 export { maya };
