@@ -1,7 +1,4 @@
 import Maya from "./server.js";
-import Trie from "./trie.js";
-
-
 
 class Router extends Maya{
     constructor() {

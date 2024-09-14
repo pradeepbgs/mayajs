@@ -1,4 +1,5 @@
-
+import path from 'path';
+import fs from 'fs'
 class ResponseHandler {
   constructor() {
     this.headers={}
@@ -25,17 +26,42 @@ class ResponseHandler {
 
 
   json(data, statusCode = 200, statusMessage = "OK") {
-    return this._generateResponse(data, statusCode, statusMessage, "application/json");
+     this._generateResponse(data, statusCode, statusMessage, "application/json");
   }
 
 
   send(data, statusCode = 200, statusMessage = "OK") {
-    return this._generateResponse(data, statusCode, statusMessage);
+     this._generateResponse(data, statusCode, statusMessage);
   }
 
-  render(){
-    // it can render html solo and ejs with some data ->
-    
+  render(templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
+    const extname = path.extname(templatePath);
+    // Handle EJS templates
+    if (extname === '.ejs') {
+      return ejs.renderFile(templatePath, data)
+        .then(renderedHtml => this._generateResponse(renderedHtml, statusCode, statusMessage, contentType))
+        .catch(error => {
+          console.error('Error rendering EJS template:', error);
+          return this._generateResponse(err, 500, 'Internal Server Error');
+        });
+    }
+    // Handle static HTML files
+    else if (extname === '.html') {
+      return new Promise((resolve, reject) => {
+        fs.readFile(templatePath, 'utf8', (err, content) => {
+          if (err) {
+            console.error('Error reading HTML file:', err);
+            resolve(this._generateResponse(err, 500, 'Internal Server Error'));
+          } else {
+            resolve(this._generateResponse(content, statusCode, statusMessage, contentType));
+          }
+        });
+      });
+    }
+    // Handle unsupported file types
+    else {
+      return this._generateResponse('Unsupported file type', 415, 'Unsupported Media Type');
+    }
   }
 
   

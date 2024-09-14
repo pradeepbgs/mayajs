@@ -7,8 +7,8 @@ const maya = new Maya();
 const port = 3000;
 
 // this means our server will now parse the incoming req body
-// maya.bodyParse();
-
+maya.bodyParse();
+maya.serveStatic('static')
 // maya.cors({
 //   origin: ['http://localhost:8000','*'],
 //   methods: 'GET,POST,PUT,DELETE',
@@ -22,6 +22,8 @@ const port = 3000;
 // this is a middleware example
 // maya.use(hello);
 // maya.use(sm);
+// maya.use('/user',sm)
+// maya.use('/user',hello)
 // maya.use("/post",user2)
 // // maya.use("/api/v1/user/register", register);
 // maya.use("/user", user2);
@@ -34,16 +36,20 @@ const port = 3000;
 //   .handler((req, res) => {
 //     return res.json({ msg: "Hello ji kaise ho sare" });
 //   });
-maya.get("/").handler((req, res) => {
+maya.get("/").isImportant().handler((req, res) => {
   const k = req.query;
   // console.log('hiii');
    return res.json({ msg: "Hello"});
   //  next()
 });
 
-// maya.get("/user").handler((req, res) => {
-//   return res.json({ msg: "hello" });
-// });
+maya.get("/user").handler((req, res) => {
+  return res.json({ msg: "hello" });
+});
+
+maya.get('/render').handler((req,res) => {
+  return res.render("static/index.html")
+})
 
 // maya.post("/test").handler((req, res) => {
 //   const body = req.body;

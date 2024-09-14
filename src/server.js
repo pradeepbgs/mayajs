@@ -2,7 +2,6 @@ import net from "net";
 import tls from "tls";
 import fs from "fs";
 
-import ResponseHandler from "./responseHandler.js";
 import { createConnectionHandler } from "./handleConnection.js";
 import Trie from "./trie.js";
 
@@ -17,7 +16,6 @@ class Maya {
     //   PATCH: {},
     // };
     this.middlewares = {};
-    this.ResponseHandler = ResponseHandler;
     this.isBodyParse = false;
     this.compiledRoutes = {};
     this.corsConfig = null;
