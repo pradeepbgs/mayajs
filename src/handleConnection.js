@@ -1,4 +1,3 @@
-import { parseRequest } from "./requestParser.js";
 import { handleRequest } from "./requestHandler.js";
 import ErrorHandler from "./errResponse.js";
 import { Buffer } from "buffer";
@@ -12,7 +11,6 @@ export function createConnectionHandler(maya, isBodyParse) {
     let bodyBuffer = Buffer.alloc(0);
     let parsedHeader;
     let isHeaderParsed = false;
-    let header;
     socket.on("data", async (chunk) => {
       buffer = Buffer.concat([buffer, chunk]);
 
@@ -20,21 +18,20 @@ export function createConnectionHandler(maya, isBodyParse) {
         const headerEndIndex = buffer.indexOf("\r\n\r\n");
         if (headerEndIndex !== -1) {
           const headerPart = buffer.slice(0, headerEndIndex + 4);
-           parsedHeader = parseRequestHeader(headerPart,header);
+          parsedHeader = parseRequestHeader(headerPart);
           if (parsedHeader.error) {
             return parsedRequestError(socket, parsedHeader.error);
           }
 
           isHeaderParsed = true;
-          // const contentLength = parseInt(
-          //   parsedHeader?.headers["content-length"] || 0,
-          //   10
-          // );
+          const contentLength = parseInt(
+            parsedHeader?.headers["content-length"] || 0,
+            10
+          );
 
           // remove header portion from buffer
           buffer = buffer.slice(headerEndIndex + 4);
-
-          if (!isBodyParse) {
+          if (parsedHeader.method === "GET" || !isBodyParse) {
             // call the reqHandler because we dont need to parse body
             handleRequest(parsedHeader, maya)
               .then((responseData) => {
@@ -47,37 +44,39 @@ export function createConnectionHandler(maya, isBodyParse) {
                 socket.write(ErrorHandler.internalServerError());
                 socket.end();
               });
+            return;
           }
         }
       }
 
       if (isHeaderParsed && isBodyParse) {
-        // now we parse body 
-        bodyBuffer = Buffer.concat([bodyBuffer,chunk])
+        console.log("hii");
+        // now we parse body
+        bodyBuffer = Buffer.concat([bodyBuffer, buffer]);
         // clear the buffer which holds header
-        buffer = Buffer.alloc(0)
-
+        buffer = Buffer.alloc(0);
         if (bodyBuffer.length > 0) {
-          const parsedBody = await parseRequestBody(bodyBuffer,header)
+          const parsedBody = await parseRequestBody(
+            bodyBuffer,
+            parsedHeader?.headers
+          );
 
           if (parsedBody?.error) {
             return parsedRequestError(socket, parsedBody.error);
           }
-
           const finalResult = {
             ...parsedHeader,
-            body:parsedBody
-          }
+            body: parsedBody,
+          };
           handleRequest(finalResult, maya)
-        .then((responseData) => {
-          socket.write(responseData || ErrorHandler.internalServerError());
-          socket.end();
-        })
-        .catch((err) => {
-          socket.write(ErrorHandler.internalServerError());
-          socket.end();
-        });
-
+            .then((responseData) => {
+              socket.write(responseData || ErrorHandler.internalServerError());
+              socket.end();
+            })
+            .catch((err) => {
+              socket.write(ErrorHandler.internalServerError());
+              socket.end();
+            });
         }
       }
     });
@@ -88,10 +87,9 @@ export function createConnectionHandler(maya, isBodyParse) {
   };
 }
 
-function parseRequestHeader(requestBuffer,header) {
+function parseRequestHeader(requestBuffer) {
   const request = requestBuffer.toString();
   const [headerSection] = request.split("\r\n\r\n");
-  // console.log(request);
   if (!headerSection) {
     return error({ error: "Invalid request format: Missing header section" });
   }
@@ -117,7 +115,6 @@ function parseRequestHeader(requestBuffer,header) {
   if (method === "GET") {
     const cachedResponse = cache.getCached(cacheKey);
     if (cachedResponse) {
-      // console.log(cachedResponse)
       return cachedResponse;
     }
   }
@@ -141,7 +138,7 @@ function parseRequestHeader(requestBuffer,header) {
     method,
     path,
     version,
-    header:headers,
+    headers,
     query: queryParams,
     cookies: Cookies,
     params,
@@ -149,16 +146,11 @@ function parseRequestHeader(requestBuffer,header) {
   };
 }
 
-
-function parseRequestBody(bodyBuffer, headers) {
-  let parsedBody;
+function parseRequestBody(bodyBuffer, headers = {}) {
   const body = bodyBuffer.toString();
+  let parsedBody;
   let files = {};
-  let contentType
-  if (headers) {
-     contentType = headers["content-type"];
-  }
-  
+  const contentType = headers["content-type"];
   if (body) {
     if (contentType?.startsWith("application/json")) {
       try {
@@ -182,9 +174,9 @@ function parseRequestBody(bodyBuffer, headers) {
   }
 
   return {
-    parsedBody,
-    files
-  }
+    ...parsedBody,
+    files,
+  };
 }
 
 function parseRequestWithoutBody(data) {

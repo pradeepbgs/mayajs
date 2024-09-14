@@ -68,7 +68,6 @@ export async function handleRequest(request, maya) {
 
 // if we found handler then call the handler(means controller)
   if (handler) {
-    console.log('object');
     try {
       const res = await handler(request, ResponseHandler, () =>{});
       return res;

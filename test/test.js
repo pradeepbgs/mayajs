@@ -43,8 +43,9 @@ maya.get("/").isImportant().handler((req, res) => {
   //  next()
 });
 
-maya.get("/user").handler((req, res) => {
-  return res.json({ msg: "hello" });
+maya.post("/test").handler((req, res) => {
+  const body = req.body
+  return res.json({ msg: "hello" , body});
 });
 
 maya.get('/render').handler(async(req,res) => {
