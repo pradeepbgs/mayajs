@@ -32,26 +32,16 @@ export function createConnectionHandler(maya, isBodyParse) {
           }
 
           isHeaderParsed = true;
-          const contentLength = parseInt(
-            parsedHeader?.headers["content-length"] || 0,
-            10
-          );
+          // const contentLength = parseInt(
+          //   parsedHeader?.headers["content-length"] || 0,
+          //   10
+          // );
 
           // remove header portion from buffer
           buffer = buffer.slice(headerEndIndex + 4);
           if (parsedHeader.method === "GET" || !isBodyParse) {
             // call the reqHandler because we dont need to parse body
-            handleRequest(parsedHeader, maya)
-              .then((responseData) => {
-                socket.write(
-                  responseData || ErrorHandler.internalServerError()
-                );
-                socket.end();
-              })
-              .catch((err) => {
-                socket.write(ErrorHandler.internalServerError());
-                socket.end();
-              });
+            handleRequest(socket, parsedHeader, maya)
             return;
           }
         }
@@ -75,15 +65,8 @@ export function createConnectionHandler(maya, isBodyParse) {
             ...parsedHeader,
             body: parsedBody,
           };
-          handleRequest(finalResult, maya)
-            .then((responseData) => {
-              socket.write(responseData || ErrorHandler.internalServerError());
-              socket.end();
-            })
-            .catch((err) => {
-              socket.write(ErrorHandler.internalServerError());
-              socket.end();
-            });
+          handleRequest(socket,finalResult, maya)
+            
         }
       }
     });

@@ -2,7 +2,7 @@ import ErrorHandler from "./errResponse.js";
 import ResponseHandler from "./responseHandler.js";
 
 
-export async function handleRequest(request, maya) {
+export async function handleRequest(socket,request, maya) {
   // Parsing the request
   const { method, path } = request;
   const [routerPath, queryString] = (path || "").split("?");
@@ -12,7 +12,10 @@ export async function handleRequest(request, maya) {
   // if  corsconfig is enabled then--->
   if(maya.corsConfig){
     const res = await applyCors(request,ResponseHandler,maya.corsConfig)
-    if(res) return res;
+    if(res) {
+      socket.write(res);
+      socket.end()
+    }
   }
 
   // // Global middleware runs here
@@ -38,8 +41,8 @@ export async function handleRequest(request, maya) {
   const exactPathMiddleware = await maya.middlewares[request.path] || [];
   const allMiddlewares = [...globalMiddleware, ...exactPathMiddleware];
 
-  const middlewareResponse = await executeMiddleware(allMiddlewares,request,ResponseHandler)
-  if(middlewareResponse) return middlewareResponse;
+  executeMiddleware(allMiddlewares,request,ResponseHandler)
+ 
 
   // find the Handler based on req path 
   const routeHandler = maya.trie.search(routerPath);
@@ -70,10 +73,12 @@ export async function handleRequest(request, maya) {
   if (handler) {
     try {
       const res = await handler(request, ResponseHandler, () =>{});
-      return res;
+      socket.write(res)
     } catch (error) {
       console.error("Error in handler:", error);
       return ErrorHandler.internalServerError();
+    } finally {
+      socket.end();
     }
   } else {
     return ErrorHandler.RouteNotFoundError();
@@ -131,7 +136,11 @@ const applyCors = (req, res, config={}) => {
 async function executeMiddleware(middlewares, req, res) {
   for (const handler of middlewares) {
     const result = await handler(req, res, () => {});
-    if (result) return result;
+    if (result){
+      socket.write(result)
+      socket.end()
+      return;
+    }
   }
   return null;
 }
