@@ -1,8 +1,13 @@
 import path from 'path';
 import fs from 'fs'
+
+const CACHE_TTL = 1 * 60 * 1000;
+const MAX_CACHE_SIZE = 100;
+
 class ResponseHandler {
   constructor() {
-    this.headers={}
+    this.headers={};
+    this.cache = new Map()
   }
 
   setHeader(key,value){
@@ -10,6 +15,14 @@ class ResponseHandler {
   }
 
   _generateResponse(data, statusCode = 200, statusMessage = "OK", contentType = "text/plain") {
+
+    // cehck if cache has this cache key data then give this cached data;
+    const cacheKey = `${statusCode}-${contentType}-${data}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL){
+      return cached.value;
+    }
+
     let response = `HTTP/1.1 ${statusCode} ${statusMessage}\r\n`;
     response += `Content-Type: ${contentType}\r\n`;
 
@@ -20,13 +33,23 @@ class ResponseHandler {
     }
 
     response += "\r\n"; // End of headers
-    response += typeof data === "object" ? JSON.stringify(data) : data;
+    response += data;
+    
+    // set the res in cache
+    const timeStamp = Date.now();
+    if (this.cache.size >= MAX_CACHE_SIZE) {
+      const oldestKey = cache.keys().next().value;
+      this.cache.delete(oldestKey);
+    }
+    this.cache.set(cacheKey, { response, timeStamp });
+
     return response;
   }
 
 
-  json(data, statusCode = 200, statusMessage = "OK") {
-     return this._generateResponse(data, statusCode, statusMessage, "application/json");
+  json(data, statusCode = 200, statusMessage = "OK",contentType='application/json') {
+    
+     return this._generateResponse(JSON.stringify(data), statusCode, statusMessage, "application/json");
   }
 
 

@@ -7,8 +7,8 @@ const maya = new Maya();
 const port = 3000;
 
 // this means our server will now parse the incoming req body
-maya.bodyParse();
-maya.serveStatic('static')
+// maya.bodyParse();
+// maya.serveStatic('static')
 // maya.cors({
 //   origin: ['http://localhost:8000','*'],
 //   methods: 'GET,POST,PUT,DELETE',
@@ -37,7 +37,6 @@ maya.serveStatic('static')
 //     return res.json({ msg: "Hello ji kaise ho sare" });
 //   });
 maya.get("/").isImportant().handler((req, res) => {
-  const k = req.query;
   // console.log('hiii');
    return res.json({ msg: "Hello"});
   //  next()

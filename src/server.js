@@ -78,7 +78,11 @@ class Maya {
 
     server.listen(port, () => {
       if (typeof callback === "function") return callback();
-      console.log(`Server is running on ${this.sslOptions ? "https" : "http"}://localhost:${port}`);
+      console.log(
+        `Server is running on ${
+          this.sslOptions ? "https" : "http"
+        }://localhost:${port}`
+      );
     });
     return server;
   }
@@ -91,7 +95,7 @@ class Maya {
 
   // cors config
 
-  cors(config){
+  cors(config) {
     this.corsConfig = config;
   }
 
@@ -101,7 +105,7 @@ class Maya {
   }
 
   // set the path of serving static file
-  serveStatic(path){
+  serveStatic(path) {
     this.staticFileServeLocation = path;
   }
 
@@ -114,25 +118,24 @@ class Maya {
       },
       handler: (...handler) => {
         this.middlewares[path] = this.middlewares[path] || [];
-        for(let i =0; i<handler.length-1;i++){
-          this.middlewares[path].push(handler[i])
+        for (let i = 0; i < handler.length - 1; i++) {
+          this.middlewares[path].push(handler[i]);
         }
-        handler = handler[handler.length-1];
-        this.trie.insert(path, { handler, isImportant, method })
-      }
+        handler = handler[handler.length - 1];
+        this.trie.insert(path, { handler, isImportant, method });
+      },
     };
     return chain;
   }
 
-  
   register(handlerInstance, pathPrefix = "") {
-    const h = Object.entries(handlerInstance.trie.root.children)
-    for (const [key , val] of h) {
-      const fullpath = pathPrefix+val?.path;
+    const h = Object.entries(handlerInstance.trie.root.children);
+    for (const [key, val] of h) {
+      const fullpath = pathPrefix + val?.path;
       const handler = val.handler;
-      const isImportant = val.isImportant
+      const isImportant = val.isImportant;
       const method = val.method;
-      this.trie.insert(fullpath,{handler,isImportant,method})
+      this.trie.insert(fullpath, { handler, isImportant, method });
     }
     handlerInstance.trie = new Trie();
   }
@@ -140,7 +143,7 @@ class Maya {
   // #joinPaths(...paths) {
   //   return '/' + paths.map(path => path.replace(/^\/|\/$/g, '')).filter(Boolean).join('/');
   // }
-  
+
   get(path) {
     return this.#defineRoute("GET", path);
   }

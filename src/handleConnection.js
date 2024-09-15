@@ -1,18 +1,26 @@
 import { handleRequest } from "./requestHandler.js";
 import ErrorHandler from "./errResponse.js";
 import { Buffer } from "buffer";
-import Cache from "./cache.js";
+import {Cache} from "./cache.js";
 import { parseMultipartFormData } from "./multipartFormDataParser.js";
 
+
+const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 const cache = new Cache();
+
 export function createConnectionHandler(maya, isBodyParse) {
   return async function handleConnection(socket) {
     let buffer = Buffer.alloc(0);
     let bodyBuffer = Buffer.alloc(0);
     let parsedHeader;
     let isHeaderParsed = false;
+
     socket.on("data", async (chunk) => {
       buffer = Buffer.concat([buffer, chunk]);
+
+      if (buffer.length > MAX_BUFFER_SIZE){
+        return ErrorHandler.requestSize_to_large();
+      }
 
       if (!isHeaderParsed) {
         const headerEndIndex = buffer.indexOf("\r\n\r\n");
@@ -50,7 +58,6 @@ export function createConnectionHandler(maya, isBodyParse) {
       }
 
       if (isHeaderParsed && isBodyParse) {
-        console.log("hii");
         // now we parse body
         bodyBuffer = Buffer.concat([bodyBuffer, buffer]);
         // clear the buffer which holds header
@@ -134,7 +141,7 @@ function parseRequestHeader(requestBuffer) {
   }
 
   let user, params;
-  return {
+  const res = {
     method,
     path,
     version,
@@ -144,6 +151,10 @@ function parseRequestHeader(requestBuffer) {
     params,
     user,
   };
+  if (method === "GET") {
+    cache.setCache(cacheKey, res);
+  }
+  return res;
 }
 
 function parseRequestBody(bodyBuffer, headers = {}) {

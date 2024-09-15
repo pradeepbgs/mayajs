@@ -22,6 +22,10 @@ class ErrorHandler {
   methodNotAllowedError() {
     return errResponse(405, "Method Not Allowed", "text/plain", "Method not allowed");
   }
+
+  requestSize_to_large(){
+    return errResponse(400,'Bad Request','application/json','Request size too large')
+  }
 }
 
 export default new ErrorHandler();
