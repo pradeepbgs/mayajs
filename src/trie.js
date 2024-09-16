@@ -63,7 +63,7 @@ class Trie {
   search(path) {
     let node = this.root;
     const pathSegments = path.split('/').filter(Boolean);  // Split incoming path into segments
-    let importantHandler = null;
+    // let importantHandler = null;
   
     for (const segment of pathSegments) {
       let key = segment;
@@ -79,15 +79,15 @@ class Trie {
         node = node.children[key];
       }
   
-      if (node.isEndOfWord && node.isImportant) {
-        importantHandler = node.handler;
-      }
+      // if (node.isEndOfWord && node.isImportant) {
+      //   importantHandler = node.handler;
+      // }
     }
   
     return node.isEndOfWord ? {
       path: node.path,
       handler: node.handler,
-      isImportant: node.isImportant,
+      // isImportant: node.isImportant,
       isDynamic: node.isDynamic,
       pattern: node.pattern,
       method:node.method

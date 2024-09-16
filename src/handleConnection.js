@@ -8,8 +8,7 @@ import { parseMultipartFormData } from "./multipartFormDataParser.js";
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 const cache = new Cache();
 
-export function createConnectionHandler(maya, isBodyParse) {
-  return async function handleConnection(socket) {
+  export async function handleConnection(socket,maya,isBodyParse) {
     let buffer = Buffer.alloc(0);
     let bodyBuffer = Buffer.alloc(0);
     let parsedHeader;
@@ -18,9 +17,9 @@ export function createConnectionHandler(maya, isBodyParse) {
     socket.on("data", async (chunk) => {
       buffer = Buffer.concat([buffer, chunk]);
 
-      if (buffer.length > MAX_BUFFER_SIZE){
-        return ErrorHandler.requestSize_to_large();
-      }
+      // if (buffer.length > MAX_BUFFER_SIZE){
+      //   return ErrorHandler.requestSize_to_large();
+      // }
 
       if (!isHeaderParsed) {
         const headerEndIndex = buffer.indexOf("\r\n\r\n");
@@ -75,7 +74,6 @@ export function createConnectionHandler(maya, isBodyParse) {
       console.log("error on socket: ", e);
     });
   };
-}
 
 function parseRequestHeader(requestBuffer) {
   const request = requestBuffer.toString();

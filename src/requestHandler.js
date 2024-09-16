@@ -9,7 +9,7 @@ export async function handleRequest(socket,request, maya) {
   const query = new URLSearchParams(queryString || "");
   request.query = Object.fromEntries(query.entries());
 
-  // if  corsconfig is enabled then--->
+  // if  cors config is enabled then--->
   if(maya.corsConfig){
     const res = await applyCors(request,ResponseHandler,maya.corsConfig)
     if(res) {
@@ -41,7 +41,7 @@ export async function handleRequest(socket,request, maya) {
   const exactPathMiddleware = await maya.middlewares[request.path] || [];
   const allMiddlewares = [...globalMiddleware, ...exactPathMiddleware];
 
-  executeMiddleware(allMiddlewares,request,ResponseHandler)
+  await executeMiddleware(allMiddlewares,request,ResponseHandler)
  
 
   // find the Handler based on req path 

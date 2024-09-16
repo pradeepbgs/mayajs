@@ -6,7 +6,6 @@
 
 - **Simple API**: Easy-to-use methods for handling HTTP requests.
 - **Middleware Support**: Integrate middleware to process requests before they reach your handlers.
-- **Route Prioritization**: Mark routes as important to optimize search and response times.
 - **Async/Await Support**: Handle asynchronous operations effortlessly.
 - **Body Parsing**: Enable request body parsing with a single method.
 
@@ -34,18 +33,14 @@ maya.get("/").handler((req, res) => {
   return res.json({ msg: "Hello, world!" });
 });
 
-maya.get("/important-route").isImportant().handler((req, res) => {
-  return res.json({
-    msg: "This route is marked as important and is optimized for faster access.",
-  });
-});
+
 
 maya.get("/async-test").handler(async (req, res) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
   return res.json({ message: "Async operation completed" });
 });
 
-maya.get("/error-test").isImportant().handler((req, res) => {
+maya.get("/error-test").handler((req, res) => {
   return res.send("Hello, error handler!");
 });
 

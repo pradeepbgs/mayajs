@@ -2,7 +2,7 @@ import net from "net";
 import tls from "tls";
 import fs from "fs";
 
-import { createConnectionHandler } from "./handleConnection.js";
+import { handleConnection } from "./handleConnection.js";
 import Trie from "./trie.js";
 
 class Maya {
@@ -59,23 +59,14 @@ class Maya {
 
   #createServer(handleConnection) {
     return this.sslOptions
-      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket))
-      : net.createServer((socket) => handleConnection(socket));
+      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket,this,this.isBodyParse))
+      : net.createServer((socket) => handleConnection(socket,this,this.isBodyParse));
   }
 
   async listen(port = 3000, callback) {
-    // this.#compile();
-    // Object.assign(this.routes, {
-    //   GET: {},
-    //   POST: {},
-    //   PUT: {},
-    //   DELETE: {},
-    //   PATCH: {},
-    // });
-    const handleConnection = createConnectionHandler(this, this.isBodyParse);
 
-    const server = this.#createServer(handleConnection);
-
+  const server = this.#createServer(handleConnection);
+   
     server.listen(port, () => {
       if (typeof callback === "function") return callback();
       console.log(
@@ -110,19 +101,19 @@ class Maya {
   }
 
   #defineRoute(method, path) {
-    let isImportant = false;
+    // let isImportant = false;
     const chain = {
-      isImportant: () => {
-        isImportant = true;
-        return chain;
-      },
+      // isImportant: () => {
+      //   isImportant = true;
+      //   return chain;
+      // },
       handler: (...handler) => {
         this.middlewares[path] = this.middlewares[path] || [];
         for (let i = 0; i < handler.length - 1; i++) {
           this.middlewares[path].push(handler[i]);
         }
         handler = handler[handler.length - 1];
-        this.trie.insert(path, { handler, isImportant, method });
+        this.trie.insert(path, { handler, method });
       },
     };
     return chain;
@@ -145,6 +136,24 @@ class Maya {
   // }
 
   get(path) {
+    // let isImportant=false;
+    //  const chain = {
+    //   isImportant:() =>{
+    //     isImportant:true;
+    //     return chain;
+    //   },
+    //   handler:(...handler) =>{
+    //     this.middlewares[path] = this.middlewares[path] || [];
+    //     for (let i = 0; i < handler.length - 1; i++) {
+    //       this.middlewares[path].push(handler[i]);
+    //     }
+    //     handler = handler[handler.length - 1];
+    //     this.trie.insert(path, { handler, isImportant, method:"GET" });
+    //   }
+    //  }
+    //  return chain;
+
+    // simplified , just make a defineroute func and call that;
     return this.#defineRoute("GET", path);
   }
 

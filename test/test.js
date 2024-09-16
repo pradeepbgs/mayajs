@@ -36,7 +36,7 @@ const port = 3000;
 //   .handler((req, res) => {
 //     return res.json({ msg: "Hello ji kaise ho sare" });
 //   });
-maya.get("/").isImportant().handler((req, res) => {
+maya.get("/").handler((req, res) => {
   // console.log('hiii');
    return res.json({ msg: "Hello"});
   //  next()
