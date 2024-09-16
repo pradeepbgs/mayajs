@@ -73,7 +73,9 @@ export async function handleRequest(socket,request, maya) {
   if (handler) {
     try {
       const res = await handler(request, ResponseHandler, () =>{});
-      socket.write(res)
+      if (res) {
+        socket.write(res)
+      }
     } catch (error) {
       console.error("Error in handler:", error);
       return ErrorHandler.internalServerError();
