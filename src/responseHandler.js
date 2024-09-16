@@ -59,19 +59,12 @@ class ResponseHandler {
 
   render(templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
     const extname = path.extname(templatePath);
-    // Handle EJS templates
-    // if (extname === '.ejs') {
-    //   return ejs.renderFile(templatePath, data)
-    //     .then(renderedHtml => this._generateResponse(renderedHtml, statusCode, statusMessage, contentType))
-    //     .catch(error => {
-    //       console.error('Error rendering EJS template:', error);
-    //       return this._generateResponse(err, 500, 'Internal Server Error');
-    //     });
-    // }
-    // Handle static HTML files
+    const a = path.resolve(`static/${templatePath}`)
+    console.log(a);
      if (extname === '.html') {
       return new Promise((resolve, reject) => {
-        fs.readFile(templatePath, 'utf8', (err, content) => {
+        fs.readFile(`static/${templatePath}`, 'utf8', (err, content) => {
+          
           if (err) {
             console.error('Error reading HTML file:', err);
             resolve(this._generateResponse(err, 500, 'Internal Server Error'));

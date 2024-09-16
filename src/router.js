@@ -4,17 +4,15 @@ class Router extends Maya{
     constructor() {
       super()
     }
-    
-
     #defineRoute(method, path) {
-        let isImportant = false;
+        // let isImportant = false;
         const chain = {
-          isImportant: () => {
-            isImportant = true;
-            return chain;
-          },
+          // isImportant: () => {
+          //   isImportant = true;
+          //   return chain;
+          // },
           handler: (handler) => {
-            this.trie.insert(path, { handler, isImportant, method })
+            this.trie.insert(path, { handler, method })
           }
         };
         return chain;
@@ -39,9 +37,6 @@ class Router extends Maya{
       patch(path) {
         return this.#defineRoute("PATCH", path);
       }
-     list(){
-        console.log(this.trie)
-     }
 }
 
 export default Router;
