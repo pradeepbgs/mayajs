@@ -64,7 +64,4 @@ class ResCache {
 }
 
 
-export {
-  Cache,
-  
-}
+module.exports = Cache

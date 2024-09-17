@@ -1,9 +1,9 @@
-import net from "net";
-import tls from "tls";
-import fs from "fs";
+const net = require('net')
+const tls = require('tls')
+const fs = require('fs')
 
-import { handleConnection } from "./handleConnection.js";
-import Trie from "./trie.js";
+const  handleConnection  = require("./handleConnection.js")
+const Trie = require("./trie.js")
 
 class Maya {
   constructor() {
@@ -174,4 +174,4 @@ class Maya {
   }
 }
 
-export default Maya;
+module.exports = Maya

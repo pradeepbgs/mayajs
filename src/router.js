@@ -1,4 +1,4 @@
-import Maya from "./server.js";
+const Maya = require("./server.js");
 
 class Router extends Maya{
     constructor() {
@@ -39,4 +39,4 @@ class Router extends Maya{
       }
 }
 
-export default Router;
+module.exports = Router

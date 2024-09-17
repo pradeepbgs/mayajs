@@ -1,14 +1,14 @@
-import { handleRequest } from "./requestHandler.js";
-import ErrorHandler from "./errResponse.js";
-import { Buffer } from "buffer";
-import {Cache} from "./cache.js";
-import { parseMultipartFormData } from "./multipartFormDataParser.js";
+const handleRequest  = require("./requestHandler.js");
+const ErrorHandler = require("./errResponse.js");
+const {Buffer}  = require("buffer");
+const Cache  = require("./cache.js");
+const parseMultipartFormData  = require("./multipartFormDataParser.js");
 
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 const cache = new Cache();
 
-  export async function handleConnection(socket,maya,isBodyParse) {
+  module.exports =  async function handleConnection(socket,maya,isBodyParse) {
     let buffer = Buffer.alloc(0);
     let bodyBuffer = Buffer.alloc(0);
     let parsedHeader;
