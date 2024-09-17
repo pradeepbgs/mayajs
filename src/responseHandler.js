@@ -1,5 +1,5 @@
-import path from 'path';
-import fs from 'fs'
+const path = require('path');
+const  fs =  require('fs')
 
 const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
@@ -114,4 +114,4 @@ class ResponseHandler {
   }
 }
 
-export default new ResponseHandler();
+module.exports =  new ResponseHandler();

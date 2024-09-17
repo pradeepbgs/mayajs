@@ -1,8 +1,8 @@
-import ErrorHandler from "./errResponse.js";
-import ResponseHandler from "./responseHandler.js";
+const ErrorHandler =  require("./errResponse.js");
+const ResponseHandler =  require("./responseHandler.js");
 
 
-export async function handleRequest(socket,request, maya) {
+module.exports = async function handleRequest(socket,request, maya) {
   // Parsing the request
   const { method, path } = request;
   const [routerPath, queryString] = (path || "").split("?");

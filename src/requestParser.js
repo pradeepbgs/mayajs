@@ -1,6 +1,6 @@
-import { parseMultipartFormData } from "./multipartFormDataParser.js";
+const parseMultipartFormData  =  require("./multipartFormDataParser.js");
 // as of now we are using this req parse because we are stream parsing req in handleconnectionjs
-export function parseRequest(requestBuffer, cache) {
+module.exports =  function parseRequest(requestBuffer, cache) {
   // console.log(requestBuffer.toString());
   const req = requestBuffer.toString();
   // Split headers and body
