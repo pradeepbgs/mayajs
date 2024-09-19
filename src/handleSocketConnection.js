@@ -3,14 +3,15 @@ const ErrorHandler = require("./errResponse.js");
 const {Buffer}  = require("buffer");
 const Cache  = require("./cache.js");
 const parseMultipartFormData  = require("./multipartFormDataParser.js");
-const {cc,ptr,cstr} = require("bun:ffi")
+const {cc,ptr, CString} = require("bun:ffi")
 const {join}  = require('path')
+
+const ffi = Bun.ffi;
 
 const pathToCFile = join(__dirname, 'headerParser.c');
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 const cache = new Cache();
-
 
 module.exports = {
   symbols: { parse_headers }
@@ -25,7 +26,7 @@ module.exports = {
 });
 
 
-  module.exports =  async function handleConnection(socket,maya,isBodyParse) {
+module.exports =  async function handleConnection(socket,maya,isBodyParse) {
     let buffer = Buffer.alloc(0);
     let bodyBuffer = Buffer.alloc(0);
     let parsedHeader;
@@ -96,10 +97,9 @@ function parseRequestHeader(requestBuffer) {
   const request = requestBuffer.toString();
   const buffer = Buffer.from(request + "\0");
 
-  const parsedHeaderCString = parse_headers(ptr(buffer))
-
-  const result = cstr(parsedHeaderCString)
-  console.log(result);
+  const responsePtr = parse_headers(ptr(buffer))
+  const response = new CString(responsePtr)
+  console.log(response);
 
   const [headerSection] = request.split("\r\n\r\n");
   if (!headerSection) {
