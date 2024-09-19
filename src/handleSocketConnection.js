@@ -3,10 +3,27 @@ const ErrorHandler = require("./errResponse.js");
 const {Buffer}  = require("buffer");
 const Cache  = require("./cache.js");
 const parseMultipartFormData  = require("./multipartFormDataParser.js");
+const {cc,ptr,cstr} = require("bun:ffi")
+const {join}  = require('path')
 
+const pathToCFile = join(__dirname, 'headerParser.c');
 
 const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 const cache = new Cache();
+
+
+module.exports = {
+  symbols: { parse_headers }
+} = cc({
+  source: pathToCFile,
+  symbols: {
+    parse_headers: {
+      returns: "cstring",
+      args: ["cstring"]
+    }
+  }
+});
+
 
   module.exports =  async function handleConnection(socket,maya,isBodyParse) {
     let buffer = Buffer.alloc(0);
@@ -77,6 +94,13 @@ const cache = new Cache();
 
 function parseRequestHeader(requestBuffer) {
   const request = requestBuffer.toString();
+  const buffer = Buffer.from(request + "\0");
+
+  const parsedHeaderCString = parse_headers(ptr(buffer))
+
+  const result = cstr(parsedHeaderCString)
+  console.log(result);
+
   const [headerSection] = request.split("\r\n\r\n");
   if (!headerSection) {
     return error({ error: "Invalid request format: Missing header section" });
@@ -139,7 +163,7 @@ function parseRequestHeader(requestBuffer) {
 }
 
 function parseRequestBody(bodyBuffer, headers = {}) {
-  const body = bodyBuffer.toString();
+  const body = bodyBuffer.tString();
   let parsedBody;
   let files = {};
   const contentType = headers["content-type"];
@@ -155,9 +179,11 @@ function parseRequestBody(bodyBuffer, headers = {}) {
     } else if (contentType?.startsWith("multipart/form-data")) {
       const boundary = contentType.split("boundary=")[1];
       const { fields, files: parsedFiles } = parseMultipartFormData(
-        req,
+        bodyBuffer,
         boundary
       );
+      console.log(`this is fields`,fields);
+      // console.log(files);
       parsedBody = fields;
       files = parsedFiles;
     } else {

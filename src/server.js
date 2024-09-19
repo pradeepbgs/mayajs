@@ -2,7 +2,7 @@ const net = require('net')
 const tls = require('tls')
 const fs = require('fs')
 
-const  handleConnection  = require("./handleConnection.js")
+const  handleConnection  = require("./handleSocketConnection.js")
 const Trie = require("./trie.js")
 
 class Maya {
