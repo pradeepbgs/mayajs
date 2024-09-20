@@ -1,23 +1,29 @@
 const parseMultipartFormData  =  require("./multipartFormDataParser.js");
-// as of now we are using this req parse because we are stream parsing req in handleconnectionjs
-module.exports =  function parseRequest(requestBuffer, cache) {
-  // console.log(requestBuffer.toString());
-  const req = requestBuffer.toString();
-  // Split headers and body
-  const [headerSection, body] = req.split("\r\n\r\n");
+const {ptr, CString } = require("bun:ffi");
+// we are using this
 
+function parseRequestHeader(requestBuffer,cache,parse_headers) {
+  const request = requestBuffer.toString();
+  // const buffer = Buffer.from(request + "\0");
+
+  // const responsePtr = parse_headers(ptr(buffer));
+  // const response = new CString(responsePtr);
+
+  // console.log(JSON.parse(response))
+
+  const [headerSection] = request.split("\r\n\r\n");
   if (!headerSection) {
     return error({ error: "Invalid request format: Missing header section" });
   }
 
-  // spit headers into two line
   const [requestLine, ...headerLine] = headerSection.split("\r\n");
   if (!requestLine) {
     return error({ error: "Invalid request format: Missing request line" });
   }
+
   // parse request line
   const [method, path, version] = requestLine.split(" ");
-  
+
   if (!method || !path || !version) {
     return error({ error: "Invalid request format: Incomplete request line" });
   }
@@ -25,13 +31,10 @@ module.exports =  function parseRequest(requestBuffer, cache) {
   const [url, queryString] = path.split("?", 2);
   const queryParams = new URLSearchParams(queryString);
   //  generate cache key
-  const cacheKey = `${method}:${url}?${queryParams}:${JSON.stringify(
-    headerLine
-  )}`;
+  const cacheKey = `${method}:${url}?${queryParams}:${JSON.stringify(headerLine)}`;
   if (method === "GET") {
     const cachedResponse = cache.getCached(cacheKey);
     if (cachedResponse) {
-      // console.log(cachedResponse)
       return cachedResponse;
     }
   }
@@ -50,52 +53,56 @@ module.exports =  function parseRequest(requestBuffer, cache) {
     }
   }
 
+  let user, params;
+  const res = {
+    method,
+    path,
+    version,
+    headers,
+    query: queryParams,
+    cookies: Cookies,
+    params,
+    user,
+  };
+  if (method === "GET") {
+    cache.setCache(cacheKey, res);
+  }
+  return res;
+}
+
+function parseRequestBody(bodyBuffer, headers = {}) {
+  const body = bodyBuffer.tString();
   let parsedBody;
   let files = {};
   const contentType = headers["content-type"];
   if (body) {
-    if (contentType.startsWith("application/json")) {
+    if (contentType?.startsWith("application/json")) {
       try {
         parsedBody = JSON.parse(body);
       } catch (error) {
         return { error: "Invalid JSON format" };
       }
-    } else if (contentType.startsWith("application/x-www-form-urlencoded")) {
+    } else if (contentType?.startsWith("application/x-www-form-urlencoded")) {
       parsedBody = Object.fromEntries(new URLSearchParams(body));
-    } else if (contentType.startsWith("multipart/form-data")) {
+    } else if (contentType?.startsWith("multipart/form-data")) {
       const boundary = contentType.split("boundary=")[1];
-      const { fields, files: parsedFiles } = parseMultipartFormData(
-        req,
-        boundary
-      );
+      const { fields, files: parsedFiles } = parseMultipartFormData(bodyBuffer, boundary);
+      console.log(`this is fields`, fields);
+      // console.log(files);
       parsedBody = fields;
       files = parsedFiles;
     } else {
       parsedBody = body;
     }
   }
-  // we are putting empty user so in middleware
-  // user can req.user = {data}
-  let user;
-  // we are setting empty params here so in reqHandler.js 
-  // we see if handler is dynamic then we extract the dynamic value
-  // and put in req.param = extractedDynamicValue
-  let params
 
-  const res = {
-    method,
-    path: path,
-    version,
-    headers,  
-    body: parsedBody,
-    query:queryParams,
-    params,
-    cookies:Cookies,
-    user,
+  return {
+    ...parsedBody,
     files,
   };
-  if (method === "GET") {
-    cache.setCache(cacheKey, res);
-  }
-  return res;
+}
+
+module.exports = {
+  parseRequestBody,
+  parseRequestHeader
 }

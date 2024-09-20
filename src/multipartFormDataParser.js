@@ -6,13 +6,13 @@ module.exports = async function parseMultipartFormData(requestBuffer, boundary) 
 
     // Convert buffer to a string with 'latin1' encoding to preserve raw binary data.
     const requestString = requestBuffer.toString('latin1');
-    // fs.writeFile('request_debug.txt', requestString, (err) => {
-    //     if (err) {
-    //         console.error("Error saving request data:", err);
-    //     } else {
-    //         console.log("Request data saved to request_debug.txt");
-    //     }
-    // });
+    fs.writeFile('request_debug.txt', requestString, (err) => {
+        if (err) {
+            console.error("Error saving request data:", err);
+        } else {
+            console.log("Request data saved to request_debug.txt");
+        }
+    });
     const parts = requestString.split(`--${boundary}`);
     for (let i = 1; i < parts.length; i++) {
         const part = parts[i].trim();
@@ -28,7 +28,7 @@ module.exports = async function parseMultipartFormData(requestBuffer, boundary) 
             headers[key.toLowerCase()] = value;
         }
 
-        console.log(headerSection)
+        // console.log(headerSection)
         // Extract filename if present
         let filename = null;
         if (headers["content-disposition"]) {
@@ -46,11 +46,12 @@ module.exports = async function parseMultipartFormData(requestBuffer, boundary) 
                 filename,
             };
         } else {
-            const nameMatch = headers["content-disposition"].match(/name="([^"]+)"/);
+            const nameMatch = headers["content-disposition"]?.match(/name="([^"]+)"/);
             if (nameMatch) {
                 fields[nameMatch[1]] = data.trim();
             }
         }
     }
+    console.log(`this is field`,fields);
     return { fields, files };
 }
