@@ -17,23 +17,7 @@ module.exports = async function handleRequest(socket, request, maya) {
     }
   }
 
-  // // Global middleware runs here
-  // const globalMiddleware = maya.middlewares['/'] || []
-  // if (globalMiddleware) {
-  //   for (const handler of globalMiddleware) {
-  //     const res = await handler(request, ResponseHandler, () => {});
-  //     if (res) return res;
-  //   }
-  // }
-
-  // // Path prefix middleware runs here
-  // const exactPathMiddleware = maya.middlewares[request.path] || []
-  // if (exactPathMiddleware) {
-  //   for (const handler of exactPathMiddleware){
-  //     const res = await handler(request,ResponseHandler,() => {})
-  //     if (res) return res;
-  //   }
-  // }
+  
 
   // we can combine all midl in one
   const globalMiddleware = (await maya.middlewares["/"]) || [];

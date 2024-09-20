@@ -8,15 +8,8 @@ const Trie = require("./trie.js");
 class Maya {
   constructor() {
     this.sslOptions = null;
-    // this.routes = {
-    //   GET: {},
-    //   POST: {},
-    //   PUT: {},
-    //   DELETE: {},
-    //   PATCH: {},
-    // };
+    
     this.middlewares = {};
-    this.isBodyParse = false;
     this.compiledRoutes = {};
     this.corsConfig = null;
     this.staticFileServeLocation = null;
@@ -40,32 +33,19 @@ class Maya {
     }
   }
 
-  // since we already inserting path and handler in defineRoute func
-  // #compile() {
-  //   for (const method in this.routes) {
-  //     for (const [path, route] of Object.entries(this.routes[method])) {
-  //       this.trie.insert(path, route);
-  //     }
-  //   }
-
-  //   Object.assign(this.routes, {
-  //     GET: {},
-  //     POST: {},
-  //     PUT: {},
-  //     DELETE: {},
-  //     PATCH: {},
-  //   });
-  // }
+ 
 
   #createServer(handleConnection) {
     return this.sslOptions
-      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket, this, this.isBodyParse))
-      : net.createServer((socket) => handleConnection(socket, this, this.isBodyParse));
+      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket, this))
+      : net.createServer((socket) => handleConnection(socket, this));
   }
 
   async listen(port = 3000, callback) {
     const server = this.#createServer(handleConnection);
-
+    if (!server) {
+      console.error("error while creating server")
+    }
     server.listen(port, () => {
       if (typeof callback === "function") return callback();
       console.log(`Server is running on ${this.sslOptions ? "https" : "http"}://localhost:${port}`);
@@ -83,11 +63,6 @@ class Maya {
 
   cors(config) {
     this.corsConfig = config;
-  }
-
-  // Enables body parsing for the server.
-  bodyParse() {
-    this.isBodyParse = true;
   }
 
   // set the path of serving static file
@@ -126,29 +101,8 @@ class Maya {
     handlerInstance.trie = new Trie();
   }
 
-  // #joinPaths(...paths) {
-  //   return '/' + paths.map(path => path.replace(/^\/|\/$/g, '')).filter(Boolean).join('/');
-  // }
-
   get(path) {
-    // let isImportant=false;
-    //  const chain = {
-    //   isImportant:() =>{
-    //     isImportant:true;
-    //     return chain;
-    //   },
-    //   handler:(...handler) =>{
-    //     this.middlewares[path] = this.middlewares[path] || [];
-    //     for (let i = 0; i < handler.length - 1; i++) {
-    //       this.middlewares[path].push(handler[i]);
-    //     }
-    //     handler = handler[handler.length - 1];
-    //     this.trie.insert(path, { handler, isImportant, method:"GET" });
-    //   }
-    //  }
-    //  return chain;
-
-    // simplified , just make a defineroute func and call that;
+   
     return this.#defineRoute("GET", path);
   }
 

@@ -2,27 +2,27 @@ const handleRequest = require("./requestHandler.js");
 const ErrorHandler = require("./errResponse.js");
 const { Buffer } = require("buffer");
 const Cache = require("./cache.js");
-const parseMultipartFormData = require("./multipartFormDataParser.js");
-const { cc, ptr, CString } = require("bun:ffi");
+const {parseRequestBody,parseRequestHeader} = require("./requestParser.js")
+const { cc } = require("bun:ffi");
 const { join } = require("path");
 
 const pathToCFile = join(__dirname, "headerParser.c");
 
 const cache = new Cache();
 
-module.exports = {
-  symbols: { parse_headers },
-} = cc({
-  source: pathToCFile,
-  symbols: {
-    parse_headers: {
-      returns: "cstring",
-      args: ["cstring"],
-    },
-  },
-});
+// module.exports = {
+//   symbols: { parse_headers },
+// } = cc({
+//   source: pathToCFile,
+//   symbols: {
+//     parse_headers: {
+//       returns: "cstring",
+//       args: ["cstring"],
+//     },
+//   },
+// });
 
-module.exports = async function handleConnection(socket, maya, isBodyParse) {
+module.exports = async function handleConnection(socket, maya) {
   let buffer = Buffer.alloc(0);
   let bodyBuffer = Buffer.alloc(0);
   let parsedHeader;
@@ -34,8 +34,10 @@ module.exports = async function handleConnection(socket, maya, isBodyParse) {
     if (!isHeaderParsed) {
       const headerEndIndex = buffer.indexOf("\r\n\r\n");
       if (headerEndIndex !== -1) {
+
         const headerPart = buffer.slice(0, headerEndIndex + 4);
-        parsedHeader = parseRequestHeader(headerPart);
+        parsedHeader = parseRequestHeader(headerPart,cache);
+
         if (parsedHeader.error) {
           return parsedRequestError(socket, parsedHeader.error);
         }
@@ -56,7 +58,7 @@ module.exports = async function handleConnection(socket, maya, isBodyParse) {
       }
     }
 
-    if (isHeaderParsed && isBodyParse) {
+    if (isHeaderParsed) {
       // now we parse body
       bodyBuffer = Buffer.concat([bodyBuffer, buffer]);
       // clear the buffer which holds header
@@ -78,107 +80,9 @@ module.exports = async function handleConnection(socket, maya, isBodyParse) {
 
   socket.on("error", (e) => {
     console.log("error on socket: ", e);
+    socket.end()
   });
 };
-
-function parseRequestHeader(requestBuffer) {
-  const request = requestBuffer.toString();
-  // const buffer = Buffer.from(request + "\0");
-
-  // const responsePtr = parse_headers(ptr(buffer));
-  // const response = new CString(responsePtr);
-  // console.log(response);
-
-  const [headerSection] = request.split("\r\n\r\n");
-  if (!headerSection) {
-    return error({ error: "Invalid request format: Missing header section" });
-  }
-
-  const [requestLine, ...headerLine] = headerSection.split("\r\n");
-  if (!requestLine) {
-    return error({ error: "Invalid request format: Missing request line" });
-  }
-
-  // parse request line
-  const [method, path, version] = requestLine.split(" ");
-
-  if (!method || !path || !version) {
-    return error({ error: "Invalid request format: Incomplete request line" });
-  }
-
-  const [url, queryString] = path.split("?", 2);
-  const queryParams = new URLSearchParams(queryString);
-  //  generate cache key
-  const cacheKey = `${method}:${url}?${queryParams}:${JSON.stringify(headerLine)}`;
-  if (method === "GET") {
-    const cachedResponse = cache.getCached(cacheKey);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-  }
-
-  // parse headers and cookie
-  const headers = {};
-  const Cookies = {};
-  for (const line of headerLine) {
-    const [key, value] = line.split(": ");
-    headers[key.toLowerCase()] = value;
-    if (key.toLowerCase() === "cookie") {
-      value.split(";").forEach((cookie) => {
-        const [Cookiekey, Cookievalue] = cookie.trim().split("=");
-        Cookies[Cookiekey] = decodeURIComponent(Cookievalue);
-      });
-    }
-  }
-
-  let user, params;
-  const res = {
-    method,
-    path,
-    version,
-    headers,
-    query: queryParams,
-    cookies: Cookies,
-    params,
-    user,
-  };
-  if (method === "GET") {
-    cache.setCache(cacheKey, res);
-  }
-  return res;
-}
-
-function parseRequestBody(bodyBuffer, headers = {}) {
-  const body = bodyBuffer.tString();
-  let parsedBody;
-  let files = {};
-  const contentType = headers["content-type"];
-  if (body) {
-    if (contentType?.startsWith("application/json")) {
-      try {
-        parsedBody = JSON.parse(body);
-      } catch (error) {
-        return { error: "Invalid JSON format" };
-      }
-    } else if (contentType?.startsWith("application/x-www-form-urlencoded")) {
-      parsedBody = Object.fromEntries(new URLSearchParams(body));
-    } else if (contentType?.startsWith("multipart/form-data")) {
-      const boundary = contentType.split("boundary=")[1];
-      const { fields, files: parsedFiles } = parseMultipartFormData(bodyBuffer, boundary);
-      console.log(`this is fields`, fields);
-      // console.log(files);
-      parsedBody = fields;
-      files = parsedFiles;
-    } else {
-      parsedBody = body;
-    }
-  }
-
-  return {
-    ...parsedBody,
-    files,
-  };
-}
 
 function parseRequestWithoutBody(data) {
   const requestLine = data.toString().split("\r\n")[0];

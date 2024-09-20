@@ -25,15 +25,18 @@ const port = 3000;
 // Middleware example
 maya.use(hello);
 
-// Enable request body parsing
-maya.bodyParse();
 
 // Define routes
 maya.get("/").handler((req, res) => {
   return res.json({ msg: "Hello, world!" });
 });
 
+// how to Render a HTML page
+const filePath = join(__dirname,"static")
 
+maya.get("/render").handler(async (req, res) => {
+  return res.render(filePath,"index.html");
+});
 
 maya.get("/async-test").handler(async (req, res) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));

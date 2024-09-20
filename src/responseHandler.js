@@ -4,7 +4,7 @@ const fs = require("fs");
 const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 
-class ResponseHandler {
+class ResponseHandler{
   constructor() {
     this.headers = {};
     this.cache = new Map();
@@ -53,13 +53,12 @@ class ResponseHandler {
     return this._generateResponse(data, statusCode, statusMessage);
   }
 
-  render(templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
+  render(filePath,templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
     const extname = path.extname(templatePath);
-    const a = path.resolve(`static/${templatePath}`);
-    console.log(a);
+    const RealPath = path.join(filePath,templatePath)
     if (extname === ".html") {
       return new Promise((resolve, reject) => {
-        fs.readFile(`static/${templatePath}`, "utf8", (err, content) => {
+        fs.readFile(RealPath, "utf8", (err, content) => {
           if (err) {
             console.error("Error reading HTML file:", err);
             resolve(this._generateResponse(err, 500, "Internal Server Error"));
