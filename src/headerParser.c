@@ -6,5 +6,5 @@ const char* parse_headers(const char *string) {
     if (string == NULL) {
         return "{\"error\":\"Received NULL pointer\"}";
     }
-    return string;
+    return "p";
 }

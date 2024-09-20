@@ -1,8 +1,7 @@
-const ErrorHandler =  require("./errResponse.js");
-const ResponseHandler =  require("./responseHandler.js");
+const ErrorHandler = require("./errResponse.js");
+const ResponseHandler = require("./responseHandler.js");
 
-
-module.exports = async function handleRequest(socket,request, maya) {
+module.exports = async function handleRequest(socket, request, maya) {
   // Parsing the request
   const { method, path } = request;
   const [routerPath, queryString] = (path || "").split("?");
@@ -10,11 +9,11 @@ module.exports = async function handleRequest(socket,request, maya) {
   request.query = Object.fromEntries(query.entries());
 
   // if  cors config is enabled then--->
-  if(maya.corsConfig){
-    const res = await applyCors(request,ResponseHandler,maya.corsConfig)
-    if(res) {
+  if (maya.corsConfig) {
+    const res = await applyCors(request, ResponseHandler, maya.corsConfig);
+    if (res) {
       socket.write(res);
-      socket.end()
+      socket.end();
     }
   }
 
@@ -36,27 +35,26 @@ module.exports = async function handleRequest(socket,request, maya) {
   //   }
   // }
 
-  // we can combine all midl in one 
-  const globalMiddleware = await maya.middlewares['/'] || [];
-  const exactPathMiddleware = await maya.middlewares[request.path] || [];
+  // we can combine all midl in one
+  const globalMiddleware = (await maya.middlewares["/"]) || [];
+  const exactPathMiddleware = (await maya.middlewares[request.path]) || [];
   const allMiddlewares = [...globalMiddleware, ...exactPathMiddleware];
 
-  await executeMiddleware(socket,allMiddlewares,request,ResponseHandler)
- 
+  await executeMiddleware(socket, allMiddlewares, request, ResponseHandler);
 
-  // find the Handler based on req path 
+  // find the Handler based on req path
   const routeHandler = maya.trie.search(routerPath);
   if (!routerPath || !routeHandler) {
-    const res =  ErrorHandler.RouteNotFoundError();
-    socket.write(res)
-    socket.end()
+    const res = ErrorHandler.RouteNotFoundError();
+    socket.write(res);
+    socket.end();
     return;
   }
 
   if (routeHandler?.method !== method) {
-    const res =  ErrorHandler.methodNotAllowedError();
-    socket.write(res)
-    socket.end()
+    const res = ErrorHandler.methodNotAllowedError();
+    socket.write(res);
+    socket.end();
     return;
   }
 
@@ -64,22 +62,21 @@ module.exports = async function handleRequest(socket,request, maya) {
   let dynamicParams = {};
 
   if (routeHandler?.isDynamic) {
-      dynamicParams = extractDynamicParams(routeHandler.path, path);
-      if (dynamicParams) {
-        request.params = dynamicParams;
-        handler = routeHandler.handler;
-      }
-    } else if (routeHandler?.path === routerPath) {
+    dynamicParams = extractDynamicParams(routeHandler.path, path);
+    if (dynamicParams) {
+      request.params = dynamicParams;
       handler = routeHandler.handler;
     }
-  
+  } else if (routeHandler?.path === routerPath) {
+    handler = routeHandler.handler;
+  }
 
-// if we found handler then call the handler(means controller)
+  // if we found handler then call the handler(means controller)
   if (handler) {
     try {
-      const res = await handler(request, ResponseHandler, () =>{});
+      const res = await handler(request, ResponseHandler, () => {});
       if (res) {
-        socket.write(res)
+        socket.write(res);
       }
     } catch (error) {
       console.error("Error in handler:", error);
@@ -90,20 +87,19 @@ module.exports = async function handleRequest(socket,request, maya) {
   } else {
     return ErrorHandler.RouteNotFoundError();
   }
-}
+};
 
 // if user made dynamic rooute -> /route/:id then extract it
 const extractDynamicParams = (routePattern, path) => {
   const object = {};
   const routeSegments = routePattern.split("/");
-  const [pathWithoutQuery] = path.split('?'); // Ignore the query string in the path
+  const [pathWithoutQuery] = path.split("?"); // Ignore the query string in the path
   const pathSegments = pathWithoutQuery.split("/"); // Re-split after removing query
-
 
   if (routeSegments.length !== pathSegments.length) {
     return null; // Path doesn't match the pattern
   }
- 
+
   routeSegments.forEach((segment, index) => {
     if (segment.startsWith(":")) {
       const dynamicKey = segment.slice(1); // Remove ':' to get the key name
@@ -114,38 +110,34 @@ const extractDynamicParams = (routePattern, path) => {
   return object;
 };
 
+// we are applying cors here
+const applyCors = (req, res, config = {}) => {
+  const origin = req.headers["origin"];
+  const allowedOrigins = config.origin || "*";
+  const allowedMethods = config.methods || "GET,POST,PUT,DELETE,OPTIONS";
+  const allowedHeaders = config.headers || ["Content-Type", "Authorization"];
 
+  res.setHeader("Access-Control-Allow-Methods", allowedMethods);
+  res.setHeader("Access-Control-Allow-Headers", allowedHeaders);
 
-// we are applying cors here 
-const applyCors = (req, res, config={}) => {
-  const origin = req.headers['origin']
-  const allowedOrigins = config.origin || '*'; 
-  const allowedMethods = config.methods || 'GET,POST,PUT,DELETE,OPTIONS';
-  const allowedHeaders = config.headers || ['Content-Type', 'Authorization'];
-
-  res.setHeader('Access-Control-Allow-Methods', allowedMethods);
-  res.setHeader('Access-Control-Allow-Headers', allowedHeaders);
-
-  if (!allowedOrigins.includes('*') || !allowedOrigins === '*' &&
-  !allowedOrigins.includes(origin)
-  ) {
-    return res.send("cors not allowed")
+  if (!allowedOrigins.includes("*") || (!allowedOrigins === "*" && !allowedOrigins.includes(origin))) {
+    return res.send("cors not allowed");
   }
 
   if (origin === "OPTIONS") {
-    res.setHeader('Access-Control-Max-Age', '86400');
-    return res.send('',204);
+    res.setHeader("Access-Control-Max-Age", "86400");
+    return res.send("", 204);
   }
-  
+
   return null;
 };
 
-async function executeMiddleware(socket,middlewares, req, res) {
+async function executeMiddleware(socket, middlewares, req, res) {
   for (const handler of middlewares) {
     const result = await handler(req, res, () => {});
-    if (result){
-      socket.write(result)
-      socket.end()
+    if (result) {
+      socket.write(result);
+      socket.end();
       return;
     }
   }

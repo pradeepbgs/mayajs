@@ -1,9 +1,9 @@
-const net = require('net')
-const tls = require('tls')
-const fs = require('fs')
+const net = require("net");
+const tls = require("tls");
+const fs = require("fs");
 
-const  handleConnection  = require("./handleSocketConnection.js")
-const Trie = require("./trie.js")
+const handleConnection = require("./handleSocketConnection.js");
+const Trie = require("./trie.js");
 
 class Maya {
   constructor() {
@@ -59,21 +59,16 @@ class Maya {
 
   #createServer(handleConnection) {
     return this.sslOptions
-      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket,this,this.isBodyParse))
-      : net.createServer((socket) => handleConnection(socket,this,this.isBodyParse));
+      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket, this, this.isBodyParse))
+      : net.createServer((socket) => handleConnection(socket, this, this.isBodyParse));
   }
 
   async listen(port = 3000, callback) {
+    const server = this.#createServer(handleConnection);
 
-  const server = this.#createServer(handleConnection);
-   
     server.listen(port, () => {
       if (typeof callback === "function") return callback();
-      console.log(
-        `Server is running on ${
-          this.sslOptions ? "https" : "http"
-        }://localhost:${port}`
-      );
+      console.log(`Server is running on ${this.sslOptions ? "https" : "http"}://localhost:${port}`);
     });
     return server;
   }
@@ -174,4 +169,4 @@ class Maya {
   }
 }
 
-module.exports = Maya
+module.exports = Maya;

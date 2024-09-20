@@ -1,105 +1,93 @@
-const handleRequest  = require("./requestHandler.js");
+const handleRequest = require("./requestHandler.js");
 const ErrorHandler = require("./errResponse.js");
-const {Buffer}  = require("buffer");
-const Cache  = require("./cache.js");
-const parseMultipartFormData  = require("./multipartFormDataParser.js");
-const {cc,ptr, CString} = require("bun:ffi")
-const {join}  = require('path')
+const { Buffer } = require("buffer");
+const Cache = require("./cache.js");
+const parseMultipartFormData = require("./multipartFormDataParser.js");
+const { cc, ptr, CString } = require("bun:ffi");
+const { join } = require("path");
 
-const ffi = Bun.ffi;
+const pathToCFile = join(__dirname, "headerParser.c");
 
-const pathToCFile = join(__dirname, 'headerParser.c');
-
-const MAX_BUFFER_SIZE = 10 * 1024 * 1024;
 const cache = new Cache();
 
 module.exports = {
-  symbols: { parse_headers }
+  symbols: { parse_headers },
 } = cc({
   source: pathToCFile,
   symbols: {
     parse_headers: {
       returns: "cstring",
-      args: ["cstring"]
-    }
-  }
+      args: ["cstring"],
+    },
+  },
 });
 
+module.exports = async function handleConnection(socket, maya, isBodyParse) {
+  let buffer = Buffer.alloc(0);
+  let bodyBuffer = Buffer.alloc(0);
+  let parsedHeader;
+  let isHeaderParsed = false;
 
-module.exports =  async function handleConnection(socket,maya,isBodyParse) {
-    let buffer = Buffer.alloc(0);
-    let bodyBuffer = Buffer.alloc(0);
-    let parsedHeader;
-    let isHeaderParsed = false;
+  socket.on("data", async (chunk) => {
+    buffer = Buffer.concat([buffer, chunk]);
 
-    socket.on("data", async (chunk) => {
-      buffer = Buffer.concat([buffer, chunk]);
+    if (!isHeaderParsed) {
+      const headerEndIndex = buffer.indexOf("\r\n\r\n");
+      if (headerEndIndex !== -1) {
+        const headerPart = buffer.slice(0, headerEndIndex + 4);
+        parsedHeader = parseRequestHeader(headerPart);
+        if (parsedHeader.error) {
+          return parsedRequestError(socket, parsedHeader.error);
+        }
 
-      // if (buffer.length > MAX_BUFFER_SIZE){
-      //   return ErrorHandler.requestSize_to_large();
-      // }
+        isHeaderParsed = true;
+        // const contentLength = parseInt(
+        //   parsedHeader?.headers["content-length"] || 0,
+        //   10
+        // );
 
-      if (!isHeaderParsed) {
-        const headerEndIndex = buffer.indexOf("\r\n\r\n");
-        if (headerEndIndex !== -1) {
-          const headerPart = buffer.slice(0, headerEndIndex + 4);
-          parsedHeader = parseRequestHeader(headerPart);
-          if (parsedHeader.error) {
-            return parsedRequestError(socket, parsedHeader.error);
-          }
-
-          isHeaderParsed = true;
-          // const contentLength = parseInt(
-          //   parsedHeader?.headers["content-length"] || 0,
-          //   10
-          // );
-
-          // remove header portion from buffer
-          buffer = buffer.slice(headerEndIndex + 4);
-          if (parsedHeader.method === "GET" || !isBodyParse) {
-            // call the reqHandler because we dont need to parse body
-            handleRequest(socket, parsedHeader, maya)
-            return;
-          }
+        // remove header portion from buffer
+        buffer = buffer.slice(headerEndIndex + 4);
+        if (parsedHeader.method === "GET" || !isBodyParse) {
+          // call the reqHandler because we dont need to parse body
+          handleRequest(socket, parsedHeader, maya);
+          return;
         }
       }
+    }
 
-      if (isHeaderParsed && isBodyParse) {
-        // now we parse body
-        bodyBuffer = Buffer.concat([bodyBuffer, buffer]);
-        // clear the buffer which holds header
-        buffer = Buffer.alloc(0);
-        if (bodyBuffer.length > 0) {
-          const parsedBody = await parseRequestBody(
-            bodyBuffer,
-            parsedHeader?.headers
-          );
+    if (isHeaderParsed && isBodyParse) {
+      // now we parse body
+      bodyBuffer = Buffer.concat([bodyBuffer, buffer]);
+      // clear the buffer which holds header
+      buffer = Buffer.alloc(0);
+      if (bodyBuffer.length > 0) {
+        const parsedBody = await parseRequestBody(bodyBuffer, parsedHeader?.headers);
 
-          if (parsedBody?.error) {
-            return parsedRequestError(socket, parsedBody.error);
-          }
-          const finalResult = {
-            ...parsedHeader,
-            body: parsedBody,
-          };
-          handleRequest(socket,finalResult, maya)
-            
+        if (parsedBody?.error) {
+          return parsedRequestError(socket, parsedBody.error);
         }
+        const finalResult = {
+          ...parsedHeader,
+          body: parsedBody,
+        };
+        handleRequest(socket, finalResult, maya);
       }
-    });
+    }
+  });
 
-    socket.on("error", (e) => {
-      console.log("error on socket: ", e);
-    });
-  };
+  socket.on("error", (e) => {
+    console.log("error on socket: ", e);
+  });
+};
 
 function parseRequestHeader(requestBuffer) {
   const request = requestBuffer.toString();
-  const buffer = Buffer.from(request + "\0");
+  // const buffer = Buffer.from(request + "\0");
 
-  const responsePtr = parse_headers(ptr(buffer))
-  const response = new CString(responsePtr)
-  console.log(response);
+  // const responsePtr = parse_headers(ptr(buffer));
+  // const response = new CString(responsePtr);
+  // console.log(response);
 
   const [headerSection] = request.split("\r\n\r\n");
   if (!headerSection) {
@@ -121,9 +109,7 @@ function parseRequestHeader(requestBuffer) {
   const [url, queryString] = path.split("?", 2);
   const queryParams = new URLSearchParams(queryString);
   //  generate cache key
-  const cacheKey = `${method}:${url}?${queryParams}:${JSON.stringify(
-    headerLine
-  )}`;
+  const cacheKey = `${method}:${url}?${queryParams}:${JSON.stringify(headerLine)}`;
   if (method === "GET") {
     const cachedResponse = cache.getCached(cacheKey);
     if (cachedResponse) {
@@ -178,11 +164,8 @@ function parseRequestBody(bodyBuffer, headers = {}) {
       parsedBody = Object.fromEntries(new URLSearchParams(body));
     } else if (contentType?.startsWith("multipart/form-data")) {
       const boundary = contentType.split("boundary=")[1];
-      const { fields, files: parsedFiles } = parseMultipartFormData(
-        bodyBuffer,
-        boundary
-      );
-      console.log(`this is fields`,fields);
+      const { fields, files: parsedFiles } = parseMultipartFormData(bodyBuffer, boundary);
+      console.log(`this is fields`, fields);
       // console.log(files);
       parsedBody = fields;
       files = parsedFiles;
