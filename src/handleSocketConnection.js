@@ -3,7 +3,7 @@ const ErrorHandler = require("./errResponse.js");
 const { Buffer } = require("buffer");
 const Cache = require("./cache.js");
 const {parseRequestBody,parseRequestHeader} = require("./requestParser.js")
-const { cc } = require("bun:ffi");
+// const { cc } = require("bun:ffi");
 const { join } = require("path");
 
 const pathToCFile = join(__dirname, "headerParser.c");
@@ -50,7 +50,7 @@ module.exports = async function handleConnection(socket, maya) {
 
         // remove header portion from buffer
         buffer = buffer.slice(headerEndIndex + 4);
-        if (parsedHeader.method === "GET" || !isBodyParse) {
+        if (parsedHeader.method === "GET") {
           // call the reqHandler because we dont need to parse body
           handleRequest(socket, parsedHeader, maya);
           return;

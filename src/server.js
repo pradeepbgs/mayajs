@@ -8,7 +8,6 @@ const Trie = require("./trie.js");
 class Maya {
   constructor() {
     this.sslOptions = null;
-    
     this.middlewares = {};
     this.compiledRoutes = {};
     this.corsConfig = null;
@@ -42,7 +41,7 @@ class Maya {
   }
 
   async listen(port = 3000, callback) {
-    const server = this.#createServer(handleConnection);
+    const server = await this.#createServer(handleConnection);
     if (!server) {
       console.error("error while creating server")
     }
@@ -70,26 +69,7 @@ class Maya {
     this.staticFileServeLocation = path;
   }
 
-  #defineRoute(method, path) {
-    // let isImportant = false;
-    const chain = {
-      // isImportant: () => {
-      //   isImportant = true;
-      //   return chain;
-      // },
-      handler: (...handler) => {
-        this.middlewares[path] = this.middlewares[path] || [];
-        for (let i = 0; i < handler.length - 1; i++) {
-          this.middlewares[path].push(handler[i]);
-        }
-        handler = handler[handler.length - 1];
-        this.trie.insert(path, { handler, method });
-      },
-    };
-    return chain;
-  }
-
-  register(handlerInstance, pathPrefix = "") {
+  async register(handlerInstance, pathPrefix = "") {
     const h = Object.entries(handlerInstance.trie.root.children);
     for (const [key, val] of h) {
       const fullpath = pathPrefix + val?.path;
@@ -101,8 +81,23 @@ class Maya {
     handlerInstance.trie = new Trie();
   }
 
+  #defineRoute(method, path) {
+    const chain = {
+      handler: (...handler) => {
+        this.middlewares[path] = this.middlewares[path] || [];
+        for (let i = 0; i < handler.length - 1; i++) {
+          this.middlewares[path].push(handler[i]);
+          console.log(this.trie)
+          console.log("ed")
+        }
+        handler = handler[handler.length - 1];
+        this.trie.insert(path, { handler, method });
+      },
+    };
+    return chain;
+  }
+
   get(path) {
-   
     return this.#defineRoute("GET", path);
   }
 

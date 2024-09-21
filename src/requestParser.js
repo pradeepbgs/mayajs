@@ -1,5 +1,5 @@
 const parseMultipartFormData  =  require("./multipartFormDataParser.js");
-const {ptr, CString } = require("bun:ffi");
+// const {ptr, CString } = require("bun:ffi");
 // we are using this
 
 function parseRequestHeader(requestBuffer,cache,parse_headers) {
@@ -71,7 +71,7 @@ function parseRequestHeader(requestBuffer,cache,parse_headers) {
 }
 
 function parseRequestBody(bodyBuffer, headers = {}) {
-  const body = bodyBuffer.tString();
+  const body = bodyBuffer.toString();
   let parsedBody;
   let files = {};
   const contentType = headers["content-type"];

@@ -27,14 +27,14 @@ module.exports = async function handleRequest(socket, request, maya) {
   await executeMiddleware(socket, allMiddlewares, request, ResponseHandler);
 
   // find the Handler based on req path
-  const routeHandler = maya.trie.search(routerPath);
+  const routeHandler = maya.trie.search(routerPath,method);
+  // console.log(routeHandler)
   if (!routerPath || !routeHandler) {
     const res = ErrorHandler.RouteNotFoundError();
     socket.write(res);
     socket.end();
     return;
   }
-
   if (routeHandler?.method !== method) {
     const res = ErrorHandler.methodNotAllowedError();
     socket.write(res);
