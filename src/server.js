@@ -1,5 +1,5 @@
 const net = require("net");
-const tls = require("tls");
+const tls = require("node:tls");
 const fs = require("fs");
 
 const handleConnection = require("./handleSocketConnection.js");
@@ -56,6 +56,7 @@ class Maya {
     const path = typeof pathORhandler === "string" ? pathORhandler : "/";
     this.middlewares[path] = this.middlewares[path] || [];
     this.middlewares[path].push(handler || pathORhandler);
+    // console.log(this.middlewares)
   }
 
   // cors config
@@ -73,29 +74,34 @@ class Maya {
     const h = Object.entries(handlerInstance.trie.root.children);
     for (const [key, val] of h) {
       const fullpath = pathPrefix + val?.path;
-      const handler = val.handler;
-      const isImportant = val.isImportant;
-      const method = val.method;
-      this.trie.insert(fullpath, { handler, isImportant, method });
+      const handler = val.handler[0];
+      const method = val.method[0];
+      this.trie.insert(fullpath, { handler, method});
     }
     handlerInstance.trie = new Trie();
   }
 
   #defineRoute(method, path) {
     const chain = {
-      handler: (...handler) => {
+      handler: (...handlers) => {
         this.middlewares[path] = this.middlewares[path] || [];
-        for (let i = 0; i < handler.length - 1; i++) {
-          this.middlewares[path].push(handler[i]);
-          console.log(this.trie)
-          console.log("ed")
-        }
-        handler = handler[handler.length - 1];
+        const middlewareHandlers = handlers.slice(0, -1);
+
+        this.middlewares[path].push(...middlewareHandlers)
+
+        const handler = handlers[handlers.length - 1];
         this.trie.insert(path, { handler, method });
       },
     };
     return chain;
   }
+
+  // middlewares = {
+  //   path : [middlewares]
+  // ex = "/":[midl1,midl2...]
+  //     "/user":[userMidl],
+
+  // }
 
   get(path) {
     return this.#defineRoute("GET", path);

@@ -2,7 +2,7 @@ const parseMultipartFormData  =  require("./multipartFormDataParser.js");
 // const {ptr, CString } = require("bun:ffi");
 // we are using this
 
-function parseRequestHeader(requestBuffer,cache,parse_headers) {
+function parseRequestHeader(requestBuffer,cache) {
   const request = requestBuffer.toString();
   // const buffer = Buffer.from(request + "\0");
 
@@ -95,9 +95,8 @@ function parseRequestBody(bodyBuffer, headers = {}) {
       parsedBody = body;
     }
   }
-
   return {
-    ...parsedBody,
+    body : parsedBody || [],
     files,
   };
 }

@@ -2,12 +2,12 @@ class TrieNode {
   constructor() {
     this.children = {};
     this.isEndOfWord = false;
-    this.handler = null;
+    this.handler = [];
     this.isImportant = false;
     this.isDynamic = false;
     this.pattern = '';
     this.path = "";
-    this.method = "";
+    this.method = []
   }
 }
 
@@ -23,10 +23,10 @@ class Trie {
     // If it's the root path '/', treat it separately
     if (path === '/') {
       node.isEndOfWord = true;
-      node.handler = route.handler;
+      node.handler.push(route.handler)
       node.isImportant = route.isImportant;
       node.path = path;
-      node.method =  route.method
+      node.method.push(route.method)
       return;
     }
   
@@ -52,15 +52,15 @@ class Trie {
   
     // After looping through the entire path, assign route details
     node.isEndOfWord = true;
-    node.method = route.method;
-    node.handler = route.handler;
+    node.method.push(route.method);    
+    node.handler.push(route.handler)
     node.isImportant = route.isImportant;
     node.path = path;  // Store the original path
   }
   
   
 
-  search(path) {
+  search(path,method) {
     let node = this.root;
     const pathSegments = path.split('/').filter(Boolean);  // Split incoming path into segments
     // let importantHandler = null;
@@ -83,15 +83,28 @@ class Trie {
       //   importantHandler = node.handler;
       // }
     }
-  
-    return node.isEndOfWord ? {
+    let count=0;
+    let routeMethod
+    for(let i=0;i<node.method.length;i++){
+      if (node.method[i] === method) {
+        routeMethod = node.method[i];
+        break;
+      } 
+      count++
+    }
+    return node.isEndOfWord && routeMethod? {
       path: node.path,
-      handler: node.handler,
-      // isImportant: node.isImportant,
+      handler: node.handler[count],
+      isDynamic: node.isDynamic,
+      pattern: node.pattern,
+      method:routeMethod
+    } : {
+      path: node.path,
+      handler: node.handler[count],
       isDynamic: node.isDynamic,
       pattern: node.pattern,
       method:node.method
-    } : null;
+    };
   }
   
 

@@ -4,9 +4,9 @@ const { Buffer } = require("buffer");
 const Cache = require("./cache.js");
 const {parseRequestBody,parseRequestHeader} = require("./requestParser.js")
 // const { cc } = require("bun:ffi");
-const { join } = require("path");
+// const { join } = require("path");
 
-const pathToCFile = join(__dirname, "headerParser.c");
+// const pathToCFile = join(__dirname, "headerParser.c");
 
 const cache = new Cache();
 
@@ -65,13 +65,12 @@ module.exports = async function handleConnection(socket, maya) {
       buffer = Buffer.alloc(0);
       if (bodyBuffer.length > 0) {
         const parsedBody = await parseRequestBody(bodyBuffer, parsedHeader?.headers);
-
         if (parsedBody?.error) {
           return parsedRequestError(socket, parsedBody.error);
         }
         const finalResult = {
           ...parsedHeader,
-          body: parsedBody,
+          ...parsedBody
         };
         handleRequest(socket, finalResult, maya);
       }
