@@ -7,7 +7,6 @@ module.exports = async function handleRequest(socket, request, maya) {
   const [routerPath, queryString] = (path || "").split("?");
   const query = new URLSearchParams(queryString || "");
   request.query = Object.fromEntries(query.entries());
-
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
     const res = await applyCors(request, ResponseHandler, maya.corsConfig);
@@ -17,24 +16,21 @@ module.exports = async function handleRequest(socket, request, maya) {
     }
   }
 
-  
-
   // we can combine all midl in one
   const globalMiddleware = (await maya.middlewares["/"]) || [];
   const exactPathMiddleware = (await maya.middlewares[request.path]) || [];
   const allMiddlewares = [...globalMiddleware, ...exactPathMiddleware];
-
-  await executeMiddleware(socket, allMiddlewares, request, ResponseHandler);
+  const res = await executeMiddleware(allMiddlewares, request, ResponseHandler);
+  if (res) socket.write(res);
 
   // find the Handler based on req path
-  const routeHandler = maya.trie.search(routerPath);
+  const routeHandler = maya.trie.search(routerPath,method);
   if (!routerPath || !routeHandler) {
     const res = ErrorHandler.RouteNotFoundError();
     socket.write(res);
     socket.end();
     return;
   }
-
   if (routeHandler?.method !== method) {
     const res = ErrorHandler.methodNotAllowedError();
     socket.write(res);
@@ -116,14 +112,9 @@ const applyCors = (req, res, config = {}) => {
   return null;
 };
 
-async function executeMiddleware(socket, middlewares, req, res) {
+async function executeMiddleware(middlewares, req, res) {
   for (const handler of middlewares) {
     const result = await handler(req, res, () => {});
-    if (result) {
-      socket.write(result);
-      socket.end();
-      return;
-    }
+    return result? result : null;
   }
-  return null;
 }

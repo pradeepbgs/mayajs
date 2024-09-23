@@ -1,5 +1,5 @@
 const net = require("net");
-const tls = require("tls");
+const tls = require("node:tls");
 const fs = require("fs");
 
 const handleConnection = require("./handleSocketConnection.js");
@@ -8,7 +8,6 @@ const Trie = require("./trie.js");
 class Maya {
   constructor() {
     this.sslOptions = null;
-    
     this.middlewares = {};
     this.compiledRoutes = {};
     this.corsConfig = null;
@@ -42,7 +41,7 @@ class Maya {
   }
 
   async listen(port = 3000, callback) {
-    const server = this.#createServer(handleConnection);
+    const server = await this.#createServer(handleConnection);
     if (!server) {
       console.error("error while creating server")
     }
@@ -57,6 +56,7 @@ class Maya {
     const path = typeof pathORhandler === "string" ? pathORhandler : "/";
     this.middlewares[path] = this.middlewares[path] || [];
     this.middlewares[path].push(handler || pathORhandler);
+    // console.log(this.middlewares)
   }
 
   // cors config
@@ -70,39 +70,40 @@ class Maya {
     this.staticFileServeLocation = path;
   }
 
+  async register(handlerInstance, pathPrefix = "") {
+    const h = Object.entries(handlerInstance.trie.root.children);
+    for (const [key, val] of h) {
+      const fullpath = pathPrefix + val?.path;
+      const handler = val.handler[0];
+      const method = val.method[0];
+      this.trie.insert(fullpath, { handler, method});
+    }
+    handlerInstance.trie = new Trie();
+  }
+
   #defineRoute(method, path) {
-    // let isImportant = false;
     const chain = {
-      // isImportant: () => {
-      //   isImportant = true;
-      //   return chain;
-      // },
-      handler: (...handler) => {
+      handler: (...handlers) => {
         this.middlewares[path] = this.middlewares[path] || [];
-        for (let i = 0; i < handler.length - 1; i++) {
-          this.middlewares[path].push(handler[i]);
-        }
-        handler = handler[handler.length - 1];
+        const middlewareHandlers = handlers.slice(0, -1);
+
+        this.middlewares[path].push(...middlewareHandlers)
+
+        const handler = handlers[handlers.length - 1];
         this.trie.insert(path, { handler, method });
       },
     };
     return chain;
   }
 
-  register(handlerInstance, pathPrefix = "") {
-    const h = Object.entries(handlerInstance.trie.root.children);
-    for (const [key, val] of h) {
-      const fullpath = pathPrefix + val?.path;
-      const handler = val.handler;
-      const isImportant = val.isImportant;
-      const method = val.method;
-      this.trie.insert(fullpath, { handler, isImportant, method });
-    }
-    handlerInstance.trie = new Trie();
-  }
+  // middlewares = {
+  //   path : [middlewares]
+  // ex = "/":[midl1,midl2...]
+  //     "/user":[userMidl],
+
+  // }
 
   get(path) {
-   
     return this.#defineRoute("GET", path);
   }
 
