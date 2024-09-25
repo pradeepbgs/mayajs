@@ -72,12 +72,12 @@ class Maya {
   }
 
   async register(handlerInstance, pathPrefix = "") {
-    const h = Object.entries(handlerInstance.trie.root.children);
-    for (const [key, val] of h) {
-      const fullpath = pathPrefix + val?.path;
-      const handler = val.handler[0];
-      const method = val.method[0];
-      this.trie.insert(fullpath, { handler, method});
+    const routeEntries = Object.entries(handlerInstance.trie.root.children);
+    for (const [routeKey, routeNode] of routeEntries) {
+      const fullpath = pathPrefix + routeNode?.path;
+      const routeHandler = routeNode.handler[0];
+      const httpMethod = routeNode.method[0];
+      this.trie.insert(fullpath, { handler:routeHandler, method:httpMethod});
     }
     handlerInstance.trie = new Trie();
   }
