@@ -16,12 +16,15 @@ module.exports = async function handleRequest(socket, request, maya) {
     }
   }
 
-  // we can combine all midl in one
-  const globalMiddleware = (await maya.middlewares["/"]) || [];
-  const exactPathMiddleware = (await maya.middlewares[request.path]) || [];
-  const allMiddlewares = [...globalMiddleware, ...exactPathMiddleware];
-  const res = await executeMiddleware(allMiddlewares, request, ResponseHandler);
-  if (res) socket.write(res);
+  const allMiddlewares = await maya.middlewares[request.path] || [];
+  if (allMiddlewares.length > 0) {
+    const res = await executeMiddleware(allMiddlewares, request, ResponseHandler);
+  if (res && socket.writable) {
+    socket.write(res);
+  }
+  }
+  
+  
 
   // find the Handler based on req path
   const routeHandler = maya.trie.search(routerPath,method);

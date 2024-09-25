@@ -1,4 +1,5 @@
 node_modules/
-main.c
-headerParser.c
+
+src/*.c
+
 

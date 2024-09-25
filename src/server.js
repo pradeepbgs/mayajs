@@ -55,8 +55,9 @@ class Maya {
   use(pathORhandler, handler) {
     const path = typeof pathORhandler === "string" ? pathORhandler : "/";
     this.middlewares[path] = this.middlewares[path] || [];
-    this.middlewares[path].push(handler || pathORhandler);
-    // console.log(this.middlewares)
+    if (!this.middlewares[path].includes(handler || pathORhandler)) {
+      this.middlewares[path].push(handler || pathORhandler);
+    }
   }
 
   // cors config
