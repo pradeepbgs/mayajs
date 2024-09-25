@@ -16,7 +16,13 @@ module.exports = async function handleRequest(socket, request, maya) {
     }
   }
 
-  const allMiddlewares = await maya.middlewares[request.path] || [];
+  const globalMiddlewares = await maya.middlewares["/"] || []
+
+  const pathMiddlewares = request.path !== "/" ? 
+  await maya.middlewares[request.path] || [] : [];
+
+  const allMiddlewares = [...globalMiddlewares,...pathMiddlewares]
+  // console.log(allMiddlewares)
   if (allMiddlewares.length > 0) {
     const res = await executeMiddleware(allMiddlewares, request, ResponseHandler);
   if (res && socket.writable) {
@@ -116,8 +122,11 @@ const applyCors = (req, res, config = {}) => {
 };
 
 async function executeMiddleware(middlewares, req, res) {
-  for (const handler of middlewares) {
-    const result = await handler(req, res, () => {});
-    return result? result : null;
+  for(let i=0; i<middlewares.length;i++){
+    const response = await middlewares[i](req,res,()=>{});
+    if (response) {
+      return response;
+    }
   }
 }
+
