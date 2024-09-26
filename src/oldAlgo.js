@@ -172,3 +172,14 @@ function parseRequest(requestBuffer, cache) {
   //   }
   // }
   // ******************
+
+  // 
+  function parseRequestWithoutBody(data) {
+    const requestLine = data.toString().split("\r\n")[0];
+    const [method, path] = requestLine.split(" ");
+    return {
+      method,
+      path,
+      headers: {},
+    };
+  }

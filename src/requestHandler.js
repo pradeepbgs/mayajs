@@ -1,7 +1,6 @@
 const ErrorHandler = require("./errResponse.js");
-const ResponseHandler = require("./responseHandler.js");
 
-module.exports = async function handleRequest(socket, request, maya) {
+module.exports = async function handleRequest(socket, request, maya,responseHandler) {
   // Parsing the request
   const { method, path } = request;
   const [routerPath, queryString] = (path || "").split("?");
@@ -9,7 +8,7 @@ module.exports = async function handleRequest(socket, request, maya) {
   request.query = Object.fromEntries(query.entries());
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
-    const res = await applyCors(request, ResponseHandler, maya.corsConfig);
+    const res = await applyCors(request, responseHandler, maya.corsConfig);
     if (res) {
       socket.write(res);
       socket.end();
@@ -25,7 +24,7 @@ module.exports = async function handleRequest(socket, request, maya) {
     const res = await executeMiddleware(
       allMiddlewares,
       request,
-      ResponseHandler
+      responseHandler
     );
     if (res && socket.writable) {
       socket.write(res);
@@ -68,10 +67,11 @@ module.exports = async function handleRequest(socket, request, maya) {
       const isAsync = handler.constructor.name === "AsyncFunction";
 
       const result = isAsync
-        ? await handler(request, ResponseHandler, () => {})
-        : handler(request, ResponseHandler, () => {});
+        ? await handler(request, responseHandler, () => {})
+        : handler(request, responseHandler, () => {});
       if (result && socket.writable) {
         socket.write(result);
+        socket.end()
       }
     } catch (error) {
       console.error("Error in handler:", error);
