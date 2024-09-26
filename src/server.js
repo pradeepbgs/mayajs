@@ -1,7 +1,6 @@
 const net = require("net");
 const tls = require("node:tls");
 const fs = require("fs");
-
 const handleConnection = require("./handleSocketConnection.js");
 const Trie = require("./trie.js");
 
@@ -41,8 +40,8 @@ class Maya {
       : net.createServer((socket) => handleConnection(socket, this));
   }
 
-  async listen(port = 3000, callback) {
-    const server = await this.#createServer(handleConnection);
+  listen(port = 3000, callback) {
+    const server = this.#createServer(handleConnection);
     if (!server) {
       console.error("error while creating server")
     }
