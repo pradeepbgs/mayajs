@@ -16,24 +16,26 @@ module.exports = async function handleRequest(socket, request, maya) {
     }
   }
 
-  const globalMiddlewares = await maya.middlewares["/"] || []
-
-  const pathMiddlewares = request.path !== "/" ? 
-  await maya.middlewares[request.path] || [] : [];
-
-  const allMiddlewares = [...globalMiddlewares,...pathMiddlewares]
-  // console.log(allMiddlewares)
+  // execute midlleware here
+  const allMiddlewares = [
+    ...(maya.globalMidlleware || []),
+    ...(maya.middlewares.get(request.path) || []),
+  ];
   if (allMiddlewares.length > 0) {
-    const res = await executeMiddleware(allMiddlewares, request, ResponseHandler);
-  if (res && socket.writable) {
-    socket.write(res);
+    const res = await executeMiddleware(
+      allMiddlewares,
+      request,
+      ResponseHandler
+    );
+    if (res && socket.writable) {
+      socket.write(res);
+      socket.end();
+      return;
+    }
   }
-  }
-  
-  
 
   // find the Handler based on req path
-  const routeHandler = maya.trie.search(routerPath,method);
+  const routeHandler = maya.trie.search(routerPath, method);
   if (!routerPath || !routeHandler) {
     const res = ErrorHandler.RouteNotFoundError();
     socket.write(res);
@@ -63,9 +65,13 @@ module.exports = async function handleRequest(socket, request, maya) {
   // if we found handler then call the handler(means controller)
   if (handler) {
     try {
-      const res = await handler(request, ResponseHandler, () => {});
-      if (res) {
-        socket.write(res);
+      const isAsync = handler.constructor.name === "AsyncFunction";
+
+      const result = isAsync
+        ? await handler(request, ResponseHandler, () => {})
+        : handler(request, ResponseHandler, () => {});
+      if (result && socket.writable) {
+        socket.write(result);
       }
     } catch (error) {
       console.error("Error in handler:", error);
@@ -109,7 +115,10 @@ const applyCors = (req, res, config = {}) => {
   res.setHeader("Access-Control-Allow-Methods", allowedMethods);
   res.setHeader("Access-Control-Allow-Headers", allowedHeaders);
 
-  if (!allowedOrigins.includes("*") || (!allowedOrigins === "*" && !allowedOrigins.includes(origin))) {
+  if (
+    !allowedOrigins.includes("*") ||
+    (!allowedOrigins === "*" && !allowedOrigins.includes(origin))
+  ) {
     return res.send("cors not allowed");
   }
 
@@ -122,11 +131,16 @@ const applyCors = (req, res, config = {}) => {
 };
 
 async function executeMiddleware(middlewares, req, res) {
-  for(let i=0; i<middlewares.length;i++){
-    const response = await middlewares[i](req,res,()=>{});
-    if (response) {
-      return response;
+  for (let i = 0; i < middlewares.length; i++) {
+    const middleware = middlewares[i];
+
+    const result = middleware(req, res, () => {});
+
+    if (result instanceof Promise) {
+      const response = await result;
+      if (response) return response;
+    } else {
+      if (result) return result;
     }
   }
 }
-

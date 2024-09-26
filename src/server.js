@@ -8,7 +8,8 @@ const Trie = require("./trie.js");
 class Maya {
   constructor() {
     this.sslOptions = null;
-    this.middlewares = {};
+    this.globalMidlleware = [];
+    this.middlewares = new Map();
     this.compiledRoutes = {};
     this.corsConfig = null;
     this.staticFileServeLocation = null;
@@ -53,10 +54,23 @@ class Maya {
   }
 
   use(pathORhandler, handler) {
-    const path = typeof pathORhandler === "string" ? pathORhandler : "/";
-    this.middlewares[path] = this.middlewares[path] || [];
-    if (!this.middlewares[path].includes(handler || pathORhandler)) {
-      this.middlewares[path].push(handler || pathORhandler);
+
+    if (typeof pathORhandler === 'function') {
+      if (!this.globalMidlleware.includes(pathORhandler)) {
+        this.globalMidlleware.push(pathORhandler);
+      }
+      return;
+    }
+
+    const path = pathORhandler
+   
+    if (!this.middlewares.has(path)) {
+      this.middlewares.set(path,[])
+    }
+
+    const middlewareHandler = handler;
+    if (!this.middlewares.get(path).includes(middlewareHandler)) {
+      this.middlewares.get(path).push(middlewareHandler)
     }
   }
 
@@ -96,13 +110,6 @@ class Maya {
     };
     return chain;
   }
-
-  // middlewares = {
-  //   path : [middlewares]
-  // ex = "/":[midl1,midl2...]
-  //     "/user":[userMidl],
-
-  // }
 
   get(path) {
     return this.#defineRoute("GET", path);
