@@ -5,9 +5,10 @@ const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 
 class ResponseHandler{
-  constructor() {
+  constructor(socket) {
     this.headers = {};
     this.cache = new Map();
+    this.socket = socket;
   }
 
   setHeader(key, value) {
@@ -46,7 +47,12 @@ class ResponseHandler{
   }
 
   json(data, statusCode = 200, statusMessage = "OK", contentType = "application/json") {
-    return this._generateResponse(JSON.stringify(data), statusCode, statusMessage, "application/json");
+    const response =  this._generateResponse(JSON.stringify(data),
+     statusCode, statusMessage, "application/json");
+     if(this.socket.writable){
+      this.socket.write(response)
+      this.socket.end()
+     }
   }
 
   send(data, statusCode = 200, statusMessage = "OK") {
@@ -108,4 +114,4 @@ class ResponseHandler{
   }
 }
 
-module.exports = new ResponseHandler();
+module.exports = ResponseHandler;

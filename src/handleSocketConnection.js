@@ -2,7 +2,8 @@ const handleRequest = require("./requestHandler.js");
 const ErrorHandler = require("./errResponse.js");
 const { Buffer } = require("buffer");
 const Cache = require("./cache.js");
-const {parseRequestBody,parseRequestHeader} = require("./requestParser.js")
+const {parseRequestBody,parseRequestHeader} = require("./requestParser.js");
+const ResponseHandler = require("./responseHandler.js");
 // const { cc } = require("bun:ffi");
 // const { join } = require("path");
 
@@ -27,7 +28,7 @@ module.exports = async function handleConnection(socket, maya) {
   let bodyBuffer = Buffer.alloc(0);
   let parsedHeader;
   let isHeaderParsed = false;
-
+  const responseHandler = new ResponseHandler(socket)
   socket.on("data", async (chunk) => {
     buffer = Buffer.concat([buffer, chunk]);
 
@@ -52,7 +53,7 @@ module.exports = async function handleConnection(socket, maya) {
         buffer = buffer.slice(headerEndIndex + 4);
         if (parsedHeader.method === "GET") {
           // call the reqHandler because we dont need to parse body
-          handleRequest(socket, parsedHeader, maya);
+          handleRequest(socket, parsedHeader, maya,responseHandler);
           return;
         }
       }
@@ -72,7 +73,7 @@ module.exports = async function handleConnection(socket, maya) {
           ...parsedHeader,
           ...parsedBody
         };
-        handleRequest(socket, finalResult, maya);
+        handleRequest(socket, finalResult, maya,responseHandler);
       }
     }
   });
@@ -87,16 +88,6 @@ module.exports = async function handleConnection(socket, maya) {
     socket.end()
   });
 };
-
-function parseRequestWithoutBody(data) {
-  const requestLine = data.toString().split("\r\n")[0];
-  const [method, path] = requestLine.split(" ");
-  return {
-    method,
-    path,
-    headers: {},
-  };
-}
 
 function parsedRequestError(socket, error) {
   console.error("Request parsing error:", error);
