@@ -1,10 +1,25 @@
 const ErrorHandler = require("./errResponse.js");
-module.exports = async function handleRequest(socket, request, maya,responseHandler) {
-
-  if (request.path === "/favicon.ico") {
-    socket.end()
+module.exports = async function handleRequest(
+  socket,
+  request,
+  maya,
+  responseHandler
+) {
+  if (request?.path === "/favicon.ico") {
+    socket.end();
     return;
   }
+
+   // we are encapsulating necessary context such as ParsedRequest,...
+  // responseHander, ()=>{}
+  // so we dont have to give ->> await handler(request, responseHandler, () => {})
+  // like this we can just ->>> await handleRequest(xl)
+
+  const xl = {
+    req: request,
+    res: responseHandler,
+    next: () => {},
+  };
 
   // Parsing the request
   const { method, path } = request;
@@ -22,16 +37,12 @@ module.exports = async function handleRequest(socket, request, maya,responseHand
   }
 
   // execute midlleware here
-  const allMiddlewares = [
+  const midllewares = [
     ...(maya.globalMidlleware || []),
-    ...(maya.middlewares.get(request.path) || []),
+    ...(maya.midllewares.get(request.path) || []),
   ];
-    if (allMiddlewares.length > 0) {
-    const res = await executeMiddleware(
-      allMiddlewares,
-      request,
-      responseHandler
-    );
+  if (midllewares.length > 0) {
+    const res = await executeMiddleware(midllewares,xl);
     if (res && socket.writable) {
       socket.write(res);
       socket.end();
@@ -72,9 +83,7 @@ module.exports = async function handleRequest(socket, request, maya,responseHand
     try {
       const isAsync = handler.constructor.name === "AsyncFunction";
 
-      const result = isAsync
-        ? await handler(request, responseHandler, () => {})
-        : handler(request, responseHandler, () => {});
+      isAsync ? await handler(xl) : handler(xl);
     } catch (error) {
       console.error("Error in handler:", error);
       return ErrorHandler.internalServerError();
@@ -132,11 +141,11 @@ const applyCors = (req, res, config = {}) => {
   return null;
 };
 
-async function executeMiddleware(middlewares, req, res) {
+async function executeMiddleware(middlewares,xl) {
   for (let i = 0; i < middlewares.length; i++) {
     const middleware = middlewares[i];
 
-    const result = await Promise.resolve(middleware(req,res,()=>{}))
-    if(result) return result;
+    const result = await Promise.resolve(middleware(xl));
+    if (result) return result;
   }
 }

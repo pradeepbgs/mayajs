@@ -1,6 +1,5 @@
 const path = require("path");
 const fs = require("fs");
-
 const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 
@@ -54,34 +53,30 @@ class ResponseHandler{
      statusCode, statusMessage, "application/json");
   }
 
-  send(data, statusCode = 200, statusMessage = "OK") {
+    send(data, statusCode = 200, statusMessage = "OK") {
     return this._generateResponse(data, statusCode, statusMessage);
   }
 
-  render(filePath,templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
+  async render(filePath,templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
     const extname = path.extname(templatePath);
     const RealPath = path.join(filePath,templatePath)
     if (extname === ".html") {
-      return new Promise((resolve, reject) => {
-        fs.readFile(RealPath, "utf8", (err, content) => {
-          if (err) {
-            console.error("Error reading HTML file:", err);
-            resolve(this._generateResponse(err, 500, "Internal Server Error"));
-          } else {
-            resolve(this._generateResponse(content, statusCode, statusMessage, contentType));
-          }
-        });
-      });
+      try {
+        const file = await fs.promises.readFile(RealPath,'utf-8')
+        return this._generateResponse(file, statusCode, statusMessage, contentType);
+      } catch (error) {
+        return this._generateResponse("Internal Server Error", 500, "Internal Server Error");
+      }
     }
     // Handle unsupported file types
     else {
-    return this._generateResponse("Unsupported file type", 415, "Unsupported Media Type");
+    return this._generateResponse("Unsupported file type, give HTML", 415, "Unsupported Media Type");
     }
   }
 
   redirect(url, statusCode = 302) {
     this.setHeader("Location", url);
-    return this._generateResponse("", statusCode, "Found", "text/plain", { Location: url });
+    return this._generateResponse("", statusCode, "Found", "text/plain");
   }
 
   cookie(name, value, options = {}) {

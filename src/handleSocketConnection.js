@@ -34,6 +34,8 @@ module.exports = async function handleConnection(socket, maya) {
 
     buffer = Buffer.concat([buffer, chunk]);
 
+    // we did setImmediate so if it takes times so it doesnt block the main thread
+    // setImmediate(async()=>{
     if (!isHeaderParsed) {
       const headerEndIndex = buffer.indexOf("\r\n\r\n");
       if (headerEndIndex !== -1) {
@@ -78,6 +80,7 @@ module.exports = async function handleConnection(socket, maya) {
         handleRequest(socket, finalResult, maya,responseHandler);
       }
     }
+  // });
   });
 
   socket.on('close', () => {
