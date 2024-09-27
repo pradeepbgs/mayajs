@@ -30,6 +30,8 @@ module.exports = async function handleConnection(socket, maya) {
   let isHeaderParsed = false;
   const responseHandler = new ResponseHandler(socket)
   socket.on("data", async (chunk) => {
+    // const startTime = Date.now();
+
     buffer = Buffer.concat([buffer, chunk]);
 
     if (!isHeaderParsed) {

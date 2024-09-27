@@ -15,8 +15,10 @@ class ErrorHandler {
     return errResponse(500, "Internal Server Error", "text/plain", "Internal server error");
   }
 
-  RouteNotFoundError() {
-    return errResponse(404, "Not Found", "text/plain", "Route not found");
+  RouteNotFoundError(path) {
+    console.error(`looks like you forgot to add this route bro ${path}`);
+    return errResponse(404, "Not Found", "text/plain", 
+      `404 Not Found: The path ${path} leads to a black hole. It's lost in space!`);
   }
 
   methodNotAllowedError() {
