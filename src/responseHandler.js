@@ -17,11 +17,11 @@ class ResponseHandler{
 
   _generateResponse(data, statusCode = 200, statusMessage = "OK", contentType = "text/plain") {
     // cehck if cache has this cache key data then give this cached data;
-    const cacheKey = `${statusCode}-${contentType}-${data}`;
-    const cached = this.cache.get(cacheKey);
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      return cached.value;
-    }
+    // const cacheKey = `${statusCode}-${contentType}-${data}`;
+    // const cached = this.cache.get(cacheKey);
+    // if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    //   return cached.value;
+    // }
 
     let response = `HTTP/1.1 ${statusCode} ${statusMessage}\r\n`;
     response += `Content-Type: ${contentType}\r\n`;
@@ -36,23 +36,22 @@ class ResponseHandler{
     response += data;
 
     // set the res in cache
-    const timeStamp = Date.now();
-    if (this.cache.size >= MAX_CACHE_SIZE) {
-      const oldestKey = cache.keys().next().value;
-      this.cache.delete(oldestKey);
-    }
-    this.cache.set(cacheKey, { response, timeStamp });
+    // const timeStamp = Date.now();
+    // if (this.cache.size >= MAX_CACHE_SIZE) {
+    //   const oldestKey = cache.keys().next().value;
+    //   this.cache.delete(oldestKey);
+    // }
+    // this.cache.set(cacheKey, { response, timeStamp });
 
-    return response;
-  }
-
-  json(data, statusCode = 200, statusMessage = "OK", contentType = "application/json") {
-    const response =  this._generateResponse(JSON.stringify(data),
-     statusCode, statusMessage, "application/json");
-     if(this.socket.writable){
+    if(this.socket.writable){
       this.socket.write(response)
       this.socket.end()
      }
+  }
+
+  json(data, statusCode = 200, statusMessage = "OK", contentType = "application/json") {
+    return this._generateResponse(JSON.stringify(data),
+     statusCode, statusMessage, "application/json");
   }
 
   send(data, statusCode = 200, statusMessage = "OK") {
@@ -76,7 +75,7 @@ class ResponseHandler{
     }
     // Handle unsupported file types
     else {
-      return this._generateResponse("Unsupported file type", 415, "Unsupported Media Type");
+    return this._generateResponse("Unsupported file type", 415, "Unsupported Media Type");
     }
   }
 
