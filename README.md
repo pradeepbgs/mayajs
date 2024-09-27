@@ -27,34 +27,36 @@ maya.use(hello);
 
 
 // Define routes
-maya.get("/").handler((req, res) => {
-  return res.json({ msg: "Hello, world!" });
+const { join } = require("path");
+const filePath = join(__dirname, "static");
+
+maya.get("/").handler((xl) => {
+  return xl.res.json({ msg: "Hello, world!" });
 });
 
-// how to Render a HTML page
-const filePath = join(__dirname,"static")
-
-maya.get("/render").handler(async (req, res) => {
-  return res.render(filePath,"index.html");
+// Render a HTML page
+maya.get("/render").handler(async (xl) => {
+  return await xl.res.render(filePath, "index.html");
 });
 
-maya.get("/async-test").handler(async (req, res) => {
+maya.get("/async-test").handler(async (xl) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  return res.json({ message: "Async operation completed" });
+  return xl.res.json({ message: "Async operation completed" });
 });
 
-maya.get("/error-test").handler((req, res) => {
-  return res.send("Hello, error handler!");
+maya.get("/error-test").handler((xl) => {
+  return xl.res.send("Hello, error handler!");
 });
 
-maya.get("/redirect").handler((req, res) => {
-  return res.redirect("/");
+maya.get("/redirect").handler((xl) => {
+  return xl.res.redirect("/");
 });
 
-maya.get("/hello/:id").handler((req, res) => {
-  const id = req.params.id;
-  return res.json({ msg: "Hello", id });
+maya.get("/hello/:id").handler((xl) => {
+  const id = xl.req.params.id;
+  return xl.res.json({ msg: "Hello", id });
 });
+
 
 // Start the server
 maya.listen(port, () => {

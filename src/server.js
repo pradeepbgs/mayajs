@@ -8,7 +8,7 @@ class Maya {
   constructor() {
     this.sslOptions = null;
     this.globalMidlleware = [];
-    this.middlewares = new Map();
+    this.midllewares = new Map();
     this.compiledRoutes = {};
     this.corsConfig = null;
     this.staticFileServeLocation = null;
@@ -45,9 +45,12 @@ class Maya {
     if (!server) {
       console.error("error while creating server")
     }
-    server.listen(port, () => {
-      if (typeof callback === "function") return callback();
-      console.log(`Server is running on ${this.sslOptions ? "https" : "http"}://localhost:${port}`);
+    // we are using setimmediate so it doesnt block the main thread
+    setImmediate(() => {
+      server.listen(port, () => {
+        if (typeof callback === "function") return callback();
+        console.log(`Server is running on ${this.sslOptions ? "https" : "http"}://localhost:${port}`);
+      });
     });
     return server;
   }
@@ -63,13 +66,13 @@ class Maya {
 
     const path = pathORhandler
    
-    if (!this.middlewares.has(path)) {
-      this.middlewares.set(path,[])
+    if (!this.midllewares.has(path)) {
+      this.midllewares.set(path,[])
     }
 
     const middlewareHandler = handler;
-    if (!this.middlewares.get(path).includes(middlewareHandler)) {
-      this.middlewares.get(path).push(middlewareHandler)
+    if (!this.midllewares.get(path).includes(middlewareHandler)) {
+      this.midllewares.get(path).push(middlewareHandler)
     }
   }
 
@@ -98,10 +101,10 @@ class Maya {
   #defineRoute(method, path) {
     const chain = {
       handler: (...handlers) => {
-        this.middlewares[path] = this.middlewares[path] || [];
+        this.midllewares[path] = this.midllewares[path] || [];
         const middlewareHandlers = handlers.slice(0, -1);
 
-        this.middlewares[path].push(...middlewareHandlers)
+        this.midllewares[path].push(...middlewareHandlers)
 
         const handler = handlers[handlers.length - 1];
         this.trie.insert(path, { handler, method });
