@@ -1,11 +1,17 @@
 const ErrorHandler = require("./errResponse.js");
-
 module.exports = async function handleRequest(socket, request, maya,responseHandler) {
+
+  if (request.path === "/favicon.ico") {
+    socket.end()
+    return;
+  }
+
   // Parsing the request
   const { method, path } = request;
   const [routerPath, queryString] = (path || "").split("?");
   const query = new URLSearchParams(queryString || "");
   request.query = Object.fromEntries(query.entries());
+
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
     const res = await applyCors(request, responseHandler, maya.corsConfig);
@@ -20,7 +26,7 @@ module.exports = async function handleRequest(socket, request, maya,responseHand
     ...(maya.globalMidlleware || []),
     ...(maya.middlewares.get(request.path) || []),
   ];
-  if (allMiddlewares.length > 0) {
+    if (allMiddlewares.length > 0) {
     const res = await executeMiddleware(
       allMiddlewares,
       request,
@@ -69,10 +75,6 @@ module.exports = async function handleRequest(socket, request, maya,responseHand
       const result = isAsync
         ? await handler(request, responseHandler, () => {})
         : handler(request, responseHandler, () => {});
-      if (result && socket.writable) {
-        socket.write(result);
-        socket.end()
-      }
     } catch (error) {
       console.error("Error in handler:", error);
       return ErrorHandler.internalServerError();
@@ -134,13 +136,7 @@ async function executeMiddleware(middlewares, req, res) {
   for (let i = 0; i < middlewares.length; i++) {
     const middleware = middlewares[i];
 
-    const result = middleware(req, res, () => {});
-
-    if (result instanceof Promise) {
-      const response = await result;
-      if (response) return response;
-    } else {
-      if (result) return result;
-    }
+    const result = await Promise.resolve(middleware(req,res,()=>{}))
+    if(result) return result;
   }
 }
