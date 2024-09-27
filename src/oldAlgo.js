@@ -183,3 +183,9 @@ function parseRequest(requestBuffer, cache) {
       headers: {},
     };
   }
+
+  // Function to log the response time
+module.exports =  function logResponseTime(startTime) {
+  const duration = Date.now() - startTime; // Calculate how much time has passed
+  console.log(`Response time: ${duration} ms`); // Log the time in milliseconds
+}
