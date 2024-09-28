@@ -46,8 +46,8 @@ module.exports = async function handleRequest(
     redirect(url, statusCode = 302){
       return this.res.redirect(url,statusCode)
     },
-    setcCokie(name, value, options = {}){
-      this.res.cookie(name, value, options = {})
+    setCookie(name, value, options = {}){
+      this.res.cookie(name, value, options)
     },
     getCookie(cookieName){
       const cookies =  this.req.cookies

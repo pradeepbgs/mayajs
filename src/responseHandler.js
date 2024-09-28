@@ -41,8 +41,7 @@ class ResponseHandler{
     //   this.cache.delete(oldestKey);
     // }
     // this.cache.set(cacheKey, { response, timeStamp });
-
-    if(this.socket.writable){
+      if(this.socket.writable){
       this.socket.write(response)
       this.socket.end()
      }
@@ -104,8 +103,12 @@ class ResponseHandler{
     if (options.httpOnly) {
       cookie += ` HttpOnly;`;
     }
+    if (options.sameSite) {
+      cookie += ` SameSite=${options.sameSite};`;
+  }
+  
     if (this.headers["Set-Cookie"]) {
-      this.headers["Set-Cookie"] += `, ${cookie}`;
+      this.headers["Set-Cookie"] += ` ${cookie}`;
   } else {
       this.headers["Set-Cookie"] = cookie;
   }
