@@ -1,4 +1,5 @@
 const ErrorHandler = require("./errResponse.js");
+
 module.exports = async function handleRequest(
   socket,
   request,
@@ -15,10 +16,43 @@ module.exports = async function handleRequest(
   // so we dont have to give ->> await handler(request, responseHandler, () => {})
   // like this we can just ->>> await handleRequest(xl)
 
-  const xl = {
+  const context = {
     req: request,
     res: responseHandler,
+    settedValue : {},
+    isAuthenticated:false,
     next: () => {},
+    set(key,value){
+      this.settedValue[key]= value;
+    },
+    get(key){
+      return this.settedValue[key]
+    },
+    setAuthenticated (isAuthenticated){
+      this.isAuthenticated=isAuthenticated
+    },
+    checkAuthentication() {
+      return this.isAuthenticated;
+    },
+    json(data){
+      return this.res.json(data);
+    },
+    send(data) {
+      return this.res.send(data);
+    },
+    html(filePath,templatePath){
+      return this.res.render(filePath,templatePath);
+    },
+    redirect(url, statusCode = 302){
+      return this.res.redirect(url,statusCode)
+    },
+    setcCokie(name, value, options = {}){
+      this.res.cookie(name, value, options = {})
+    },
+    getCookie(cookieName){
+      const cookies =  this.req.cookies
+      return cookies[cookieName]
+    }
   };
 
   // Parsing the request
@@ -42,7 +76,7 @@ module.exports = async function handleRequest(
     ...(maya.midllewares.get(request.path) || []),
   ];
   if (midllewares.length > 0) {
-    const res = await executeMiddleware(midllewares,xl);
+    const res = await executeMiddleware(midllewares,context);
     if (res && socket.writable) {
       socket.write(res);
       socket.end();
@@ -83,7 +117,7 @@ module.exports = async function handleRequest(
     try {
       const isAsync = handler.constructor.name === "AsyncFunction";
 
-      isAsync ? await handler(xl) : handler(xl);
+      isAsync ? await handler(context) : handler(context);
     } catch (error) {
       console.error("Error in handler:", error);
       return ErrorHandler.internalServerError();
@@ -141,11 +175,10 @@ const applyCors = (req, res, config = {}) => {
   return null;
 };
 
-async function executeMiddleware(middlewares,xl) {
+async function executeMiddleware(middlewares,context) {
   for (let i = 0; i < middlewares.length; i++) {
     const middleware = middlewares[i];
-
-    const result = await Promise.resolve(middleware(xl));
+    const result = await Promise.resolve(middleware(context));
     if (result) return result;
   }
 }

@@ -104,7 +104,11 @@ class ResponseHandler{
     if (options.httpOnly) {
       cookie += ` HttpOnly;`;
     }
-    this.headers["Set-Cookie"] = cookie;
+    if (this.headers["Set-Cookie"]) {
+      this.headers["Set-Cookie"] += `, ${cookie}`;
+  } else {
+      this.headers["Set-Cookie"] = cookie;
+  }
   }
 }
 
