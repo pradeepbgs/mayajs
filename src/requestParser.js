@@ -53,7 +53,7 @@ function parseRequestHeader(requestBuffer,cache) {
     }
   }
 
-  let user, params;
+  let params;
   const res = {
     method,
     path,
@@ -62,7 +62,6 @@ function parseRequestHeader(requestBuffer,cache) {
     query: queryParams,
     cookies: Cookies,
     params,
-    user,
   };
   if (method === "GET") {
     cache.setCache(cacheKey, res);
