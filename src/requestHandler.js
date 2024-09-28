@@ -1,4 +1,6 @@
 const ErrorHandler = require("./errResponse.js");
+const createContext = require('./context.js');
+
 
 module.exports = async function handleRequest(
   socket,
@@ -10,50 +12,7 @@ module.exports = async function handleRequest(
     socket.end();
     return;
   }
-
-   // we are encapsulating necessary context such as ParsedRequest,...
-  // responseHander, ()=>{}
-  // so we dont have to give ->> await handler(request, responseHandler, () => {})
-  // like this we can just ->>> await handleRequest(xl)
-
-  const context = {
-    req: request,
-    res: responseHandler,
-    settedValue : {},
-    isAuthenticated:false,
-    next: () => {},
-    set(key,value){
-      this.settedValue[key]= value;
-    },
-    get(key){
-      return this.settedValue[key]
-    },
-    setAuthenticated (isAuthenticated){
-      this.isAuthenticated=isAuthenticated
-    },
-    checkAuthentication() {
-      return this.isAuthenticated;
-    },
-    json(data){
-      return this.res.json(data);
-    },
-    send(data) {
-      return this.res.send(data);
-    },
-    html(filePath,templatePath){
-      return this.res.render(filePath,templatePath);
-    },
-    redirect(url, statusCode = 302){
-      return this.res.redirect(url,statusCode)
-    },
-    setCookie(name, value, options = {}){
-      this.res.cookie(name, value, options)
-    },
-    getCookie(cookieName){
-      const cookies =  this.req.cookies
-      return cookies[cookieName]
-    }
-  };
+  const context = createContext(request,responseHandler)
 
   // Parsing the request
   const { method, path } = request;
@@ -71,9 +30,10 @@ module.exports = async function handleRequest(
   }
 
   // execute midlleware here
+ 
   const midllewares = [
     ...(maya.globalMidlleware || []),
-    ...(maya.midllewares.get(request.path) || []),
+    ...(maya.midllewares[request.path] || []),
   ];
   if (midllewares.length > 0) {
     const res = await executeMiddleware(midllewares,context);

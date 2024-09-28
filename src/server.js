@@ -32,47 +32,50 @@ class Maya {
     }
   }
 
- 
-
   #createServer(handleConnection) {
     return this.sslOptions
-      ? tls.createServer(this.sslOptions, (socket) => handleConnection(socket, this))
+      ? tls.createServer(this.sslOptions, (socket) =>
+          handleConnection(socket, this)
+        )
       : net.createServer((socket) => handleConnection(socket, this));
   }
 
   listen(port = 3000, callback) {
     const server = this.#createServer(handleConnection);
     if (!server) {
-      console.error("error while creating server")
+      console.error("error while creating server");
     }
     // we are using setimmediate so it doesnt block the main thread
     setImmediate(() => {
       server.listen(port, () => {
         if (typeof callback === "function") return callback();
-        console.log(`Server is running on ${this.sslOptions ? "https" : "http"}://localhost:${port}`);
+        console.log(
+          `Server is running on ${
+            this.sslOptions ? "https" : "http"
+          }://localhost:${port}`
+        );
       });
     });
     return server;
   }
 
   use(pathORhandler, handler) {
-
-    if (typeof pathORhandler === 'function') {
+    if (typeof pathORhandler === "function") {
       if (!this.globalMidlleware.includes(pathORhandler)) {
         this.globalMidlleware.push(pathORhandler);
       }
       return;
     }
 
-    const path = pathORhandler
-   
+    const path = pathORhandler;
+
     if (!this.midllewares.has(path)) {
-      this.midllewares.set(path,[])
+      this.midllewares.set(path, []);
     }
 
     const middlewareHandler = handler;
     if (!this.midllewares.get(path).includes(middlewareHandler)) {
-      this.midllewares.get(path).push(middlewareHandler)
+      this.midllewares.get(path).push(middlewareHandler);
     }
   }
 
@@ -93,7 +96,7 @@ class Maya {
       const fullpath = pathPrefix + routeNode?.path;
       const routeHandler = routeNode.handler[0];
       const httpMethod = routeNode.method[0];
-      this.trie.insert(fullpath, { handler:routeHandler, method:httpMethod});
+      this.trie.insert(fullpath, { handler: routeHandler, method: httpMethod });
     }
     handlerInstance.trie = new Trie();
   }
@@ -103,9 +106,13 @@ class Maya {
       handler: (...handlers) => {
         this.midllewares[path] = this.midllewares[path] || [];
         const middlewareHandlers = handlers.slice(0, -1);
-
-        this.midllewares[path].push(...middlewareHandlers)
-
+        if (path === "/") {
+          if (!this.globalMidlleware.includes(...middlewareHandlers)) {
+            this.globalMidlleware.push(...middlewareHandlers);
+          }
+        } else {
+          this.midllewares[path].push(...middlewareHandlers);
+        }
         const handler = handlers[handlers.length - 1];
         this.trie.insert(path, { handler, method });
       },
@@ -113,24 +120,54 @@ class Maya {
     return chain;
   }
 
-  get(path) {
+  #addMiddlewareAndHandler(method, path, handlers) {
+    this.midllewares[path] = this.midllewares[path] || [];
+    const middlewareHandlers = handlers.slice(0, -1);
+    if (path === "/") {
+      if (!this.globalMidlleware.includes(...middlewareHandlers)) {
+        this.globalMidlleware.push(...middlewareHandlers);
+      }
+    } else {
+      this.midllewares[path].push(...middlewareHandlers);
+    }
+
+    const handler = handlers[handlers.length - 1];
+    return this.trie.insert(path, { handler, method });
+  }
+
+  get(path, ...handlers) {
+    if (handlers.length > 0) {
+      return this.#addMiddlewareAndHandler("GET", path, handlers);
+    }
     return this.#defineRoute("GET", path);
   }
 
-  post(path) {
+  post(path, ...handlers) {
+    if (handlers.length > 0) {
+      return this.#addMiddlewareAndHandler("POST", path, handlers);
+    }
     return this.#defineRoute("POST", path);
   }
 
-  put(path) {
+  put(path, ...handlers) {
+    if (handlers.length > 0) {
+      return this.#addMiddlewareAndHandler("PUT", path, handlers);
+    }
     return this.#defineRoute("PUT", path);
   }
 
-  delete(path) {
-    return this.#defineRoute("DELETE", path);
+  patch(path, ...handlers) {
+    if (handlers.length > 0) {
+      return this.#addMiddlewareAndHandler("PATCH", path, handlers);
+    }
+    return this.#defineRoute("PATCH", path);
   }
 
-  patch(path) {
-    return this.#defineRoute("PATCH", path);
+  delete(path, ...handlers) {
+    if (handlers.length > 0) {
+      return this.#addMiddlewareAndHandler("DELETE", path, handlers);
+    }
+    return this.#defineRoute("DELETE", path);
   }
 }
 

@@ -27,7 +27,19 @@ class ResponseHandler{
 
     if (Object.keys(this.headers).length > 0) {
       for (const [key, value] of Object.entries(this.headers)) {
-        response += `${key}: ${value}\r\n`;
+        if (Array.isArray(value)) {
+          value.forEach((cookie) => {
+            response += `${key}: ${cookie}\r\n`;
+          });
+        } else if (key === "Set-Cookie") {
+          // Split Set-Cookie header by comma
+          const cookies = value.split(",");
+          cookies.forEach((cookie) => {
+            response += `${key}: ${cookie.trim()}\r\n`;
+          });
+        } else {
+          response += `${key}: ${value}\r\n`;
+        }
       }
     }
 
@@ -52,7 +64,7 @@ class ResponseHandler{
      statusCode, statusMessage, "application/json");
   }
 
-    send(data, statusCode = 200, statusMessage = "OK") {
+  send(data, statusCode = 200, statusMessage = "OK") {
     return this._generateResponse(data, statusCode, statusMessage);
   }
 
@@ -79,39 +91,57 @@ class ResponseHandler{
   }
 
   cookie(name, value, options = {}) {
+    const defaults = {
+      secure: true,
+      httpOnly: true,
+      sameSite: 'Lax',
+    };
+  
+    options = { ...defaults, ...options };
+  
     let cookie = `${name}=${value}`;
+  
     if (options.expires) {
       cookie += ` Expires=${options.expires.toUTCString()};`;
     }
-
+  
     if (options.maxAge) {
       cookie += ` Max-Age=${options.maxAge};`;
     }
-
+  
     if (options.domain) {
       cookie += ` Domain=${options.domain};`;
     }
-
+  
     if (options.path) {
       cookie += ` Path=${options.path};`;
     }
-
+  
     if (options.secure) {
       cookie += ` Secure;`;
     }
-
+  
     if (options.httpOnly) {
       cookie += ` HttpOnly;`;
     }
+  
     if (options.sameSite) {
       cookie += ` SameSite=${options.sameSite};`;
-  }
+    }
   
     if (this.headers["Set-Cookie"]) {
-      this.headers["Set-Cookie"] += ` ${cookie}`;
-  } else {
+      const existingCookies = Array.isArray(this.headers["Set-Cookie"])
+      ? this.headers["Set-Cookie"]
+      : [this.headers["Set-Cookie"]];
+
+    // Add new cookie to the array
+    existingCookies.push(cookie);
+
+    // Update Set-Cookie header
+    this.headers["Set-Cookie"] = existingCookies;
+    } else {
       this.headers["Set-Cookie"] = cookie;
-  }
+    }
   }
 }
 
