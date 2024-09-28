@@ -44,7 +44,6 @@ class Trie {
       }
   
       node = node.children[key];
-  
       // Set dynamic route information if applicable
       node.isDynamic = isDynamic;
       node.pattern = segment;  // Store the actual pattern like ':id'

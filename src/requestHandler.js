@@ -30,10 +30,9 @@ module.exports = async function handleRequest(
   }
 
   // execute midlleware here
- 
   const midllewares = [
     ...(maya.globalMidlleware || []),
-    ...(maya.midllewares[request.path] || []),
+    ...(maya.midllewares.get(request.path) || []),
   ];
   if (midllewares.length > 0) {
     const res = await executeMiddleware(midllewares,context);
@@ -46,12 +45,13 @@ module.exports = async function handleRequest(
 
   // find the Handler based on req path
   const routeHandler = maya.trie.search(routerPath, method);
-  if (!routerPath || !routeHandler) {
+  if (!routerPath || !routeHandler || !routeHandler.handler) {
     const res = ErrorHandler.RouteNotFoundError(path);
     socket.write(res);
     socket.end();
     return;
   }
+
   if (routeHandler?.method !== method) {
     const res = ErrorHandler.methodNotAllowedError();
     socket.write(res);

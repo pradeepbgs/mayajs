@@ -19,8 +19,8 @@ class Maya {
     if (options.keyPath && options.certPath) {
       try {
         this.sslOptions = {
-          key: await fs.readFileSync(options.keyPath),
-          cert: await fs.readFileSync(options.certPath),
+          key: await fs.promises.readFile(options.keyPath),
+          cert: await fs.promises.readFile(options.certPath),
         };
       } catch (error) {
         console.error("Error reading SSL certificate or key:", error);
@@ -104,14 +104,18 @@ class Maya {
   #defineRoute(method, path) {
     const chain = {
       handler: (...handlers) => {
-        this.midllewares[path] = this.midllewares[path] || [];
+        if (!this.midllewares.has(path)) {
+          this.midllewares.set(path, []);
+        }        
         const middlewareHandlers = handlers.slice(0, -1);
         if (path === "/") {
           if (!this.globalMidlleware.includes(...middlewareHandlers)) {
             this.globalMidlleware.push(...middlewareHandlers);
           }
         } else {
-          this.midllewares[path].push(...middlewareHandlers);
+          if (!this.midllewares.get(path).includes(...middlewareHandlers)) {
+            this.midllewares.get(path).push(...middlewareHandlers);
+          }
         }
         const handler = handlers[handlers.length - 1];
         this.trie.insert(path, { handler, method });
@@ -121,14 +125,18 @@ class Maya {
   }
 
   #addMiddlewareAndHandler(method, path, handlers) {
-    this.midllewares[path] = this.midllewares[path] || [];
+    if (!this.midllewares.has(path)) {
+      this.midllewares.set(path, []);
+    }    
     const middlewareHandlers = handlers.slice(0, -1);
     if (path === "/") {
       if (!this.globalMidlleware.includes(...middlewareHandlers)) {
         this.globalMidlleware.push(...middlewareHandlers);
       }
     } else {
-      this.midllewares[path].push(...middlewareHandlers);
+      if (!this.midllewares.get(path).includes(...middlewareHandlers)) {
+        this.midllewares.get(path).push(...middlewareHandlers);
+      }
     }
 
     const handler = handlers[handlers.length - 1];
