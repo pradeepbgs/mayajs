@@ -8,6 +8,7 @@ class TrieNode {
     this.pattern = '';
     this.path = "";
     this.method = []
+    this.subMiddlewares= new Map()
   }
 }
 
@@ -57,6 +58,11 @@ class Trie {
     node.path = path;  // Store the original path
   }
   
+  insertMidl(midl){
+    if (!this.root.subMiddlewares.has(midl)) {
+      this.root.subMiddlewares.set(midl)
+    }
+  }
   
 
   search(path,method) {

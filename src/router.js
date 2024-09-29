@@ -5,13 +5,19 @@ class Router extends Maya{
       super()
     }
     #defineRoute(method, path) {
-        // let isImportant = false;
         const chain = {
-          // isImportant: () => {
-          //   isImportant = true;
-          //   return chain;
-          // },
-          handler: (handler) => {
+          handler: (...handlers) => {
+            if (handlers.length > 1){
+              if (!this.trie.root.subMiddlewares.has(path)) {
+                this.trie.root.subMiddlewares.set(path,[])
+              } 
+              const middlewareHandlers = handlers.slice(0, -1);
+              
+              if (!this.trie.root.subMiddlewares.get(path).includes(...middlewareHandlers)) {
+                  this.trie.root.subMiddlewares.get(path).push(...middlewareHandlers)
+              }
+            }
+            const handler = handlers[handlers.length-1]
             this.trie.insert(path, { handler, method })
           }
         };

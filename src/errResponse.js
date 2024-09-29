@@ -7,8 +7,8 @@ const errResponse = (statusCode, statusMessage, contentType = "text/plain", data
 };
 
 class ErrorHandler {
-  invalidRequestError() {
-    return errResponse(400, "Bad Request", "text/plain", "Invalid request format");
+  invalidRequestError(err) {
+    return errResponse(400, "Bad Request", "text/plain", `${err?err:"invalid request format"}`);
   }
 
   internalServerError() {

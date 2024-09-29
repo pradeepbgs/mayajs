@@ -42,7 +42,7 @@ module.exports = async function handleConnection(socket, maya) {
 
         const headerPart = buffer.slice(0, headerEndIndex + 4);
         parsedHeader = parseRequestHeader(headerPart,cache);
-
+        // console.log(parsedHeader.err);
         if (parsedHeader.error) {
           return parsedRequestError(socket, parsedHeader.error);
         }
@@ -95,7 +95,7 @@ module.exports = async function handleConnection(socket, maya) {
 };
 
 function parsedRequestError(socket, error) {
-  console.error("Request parsing error:", error);
-  socket.write(ErrorHandler.badRequest(error));
+  // console.error("Request parsing error:", error);
+  socket.write(ErrorHandler.invalidRequestError(error));
   socket.end();
 }

@@ -92,6 +92,15 @@ class Maya {
 
   async register(handlerInstance, pathPrefix = "") {
     const routeEntries = Object.entries(handlerInstance.trie.root.children);
+    handlerInstance.trie.root.subMiddlewares.forEach((middleware,path)=>{
+      // console.log(middleware,pathPrefix+path);
+      if (!this.midllewares.has(pathPrefix+path)) {
+        this.midllewares.set(pathPrefix+path, []);
+      } 
+      if (!this.midllewares.get(pathPrefix+path).includes(...middleware)) {
+        this.midllewares.get(pathPrefix+path).push(...middleware);
+      }
+    })
     for (const [routeKey, routeNode] of routeEntries) {
       const fullpath = pathPrefix + routeNode?.path;
       const routeHandler = routeNode.handler[0];
