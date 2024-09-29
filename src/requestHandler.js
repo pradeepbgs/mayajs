@@ -77,7 +77,21 @@ module.exports = async function handleRequest(
     try {
       const isAsync = handler.constructor.name === "AsyncFunction";
 
-      isAsync ? await handler(context) : handler(context);
+      if (isAsync) {
+        const res  = await handler(context)
+        if(res && typeof res === 'string'){
+         return responseHandler.send(res)
+        } else if (res && typeof res === 'object'){
+          return responseHandler.json(res)
+        }
+      }else{
+        const res = handler(context)
+        if(res && typeof res === 'string'){
+          return responseHandler.send(res)
+         } else if (res && typeof res === 'object'){
+           return responseHandler.json(res)
+         }
+      }
     } catch (error) {
       console.error("Error in handler:", error);
       return ErrorHandler.internalServerError();

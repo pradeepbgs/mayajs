@@ -24,7 +24,29 @@ class Router extends Maya{
         return chain;
       }
 
-      get(path) {
+      #addMiddlewareAndHandler(method, path, handlers) {
+        if (!this.trie.root.subMiddlewares.has(path)) {
+          this.trie.root.subMiddlewares.set(path,[])
+        }  
+        const middlewareHandlers = handlers.slice(0, -1);
+        if (path === "/") {
+          if (!this.globalMidlleware.includes(...middlewareHandlers)) {
+            this.globalMidlleware.push(...middlewareHandlers);
+          }
+        } else {
+          if (!this.midllewares.get(path).includes(...middlewareHandlers)) {
+            this.midllewares.get(path).push(...middlewareHandlers);
+          }
+        }
+    
+        const handler = handlers[handlers.length - 1];
+        return this.trie.insert(path, { handler, method });
+      }
+
+      get(path,...handlers) {
+        if (handlers.length > 0) {
+          return this.#addMiddlewareAndHandler("GET", path, handlers);
+        }
         return this.#defineRoute("GET", path);
       }
     

@@ -93,7 +93,6 @@ class Maya {
   async register(handlerInstance, pathPrefix = "") {
     const routeEntries = Object.entries(handlerInstance.trie.root.children);
     handlerInstance.trie.root.subMiddlewares.forEach((middleware,path)=>{
-      // console.log(middleware,pathPrefix+path);
       if (!this.midllewares.has(pathPrefix+path)) {
         this.midllewares.set(pathPrefix+path, []);
       } 
