@@ -55,13 +55,19 @@ class ResponseHandler{
     // this.cache.set(cacheKey, { response, timeStamp });
       if(this.socket.writable){
       this.socket.write(response)
-      return this.socket.end()
+      this.socket.end();
+      return;
      }
   }
 
   json(data, statusCode = 200, statusMessage = "OK", contentType = "application/json") {
-    return this._generateResponse(JSON.stringify(data),
-     statusCode, statusMessage, "application/json");
+    try {
+      return this._generateResponse(JSON.stringify(data||{}),
+       statusCode, statusMessage, "application/json");
+    } catch (error) {
+      console.error("Error serializing JSON:", error);
+      return this._generateResponse('{"error":"Error serializing JSON"}', 500, "Internal Server Error", "application/json");
+    }
   }
 
   send(data, statusCode = 200, statusMessage = "OK") {

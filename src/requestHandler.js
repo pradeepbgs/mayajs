@@ -9,7 +9,8 @@ module.exports = async function handleRequest(
   responseHandler
 ) {
   if (request?.path === "/favicon.ico") {
-    return socket.end();  
+    socket.end();  
+    return;
   }
   const context = createContext(request,responseHandler)
 
@@ -33,7 +34,7 @@ module.exports = async function handleRequest(
     ...(maya.globalMidlleware || []),
     ...(maya.midllewares.get(request.path) || [])
   ]
-  
+
   await executeMiddleware(midllewares,context,socket);
 
   // find the Handler based on req path
@@ -46,38 +47,28 @@ module.exports = async function handleRequest(
     return sendError(socket, ErrorHandler.methodNotAllowedError());
   }
 
-  let handler;
   let dynamicParams = {};
-
   if (routeHandler?.isDynamic) {
     dynamicParams = extractDynamicParams(routeHandler.path, path);
     if (dynamicParams) {
       request.params = dynamicParams;
-      handler = routeHandler.handler;
     }
-  } else if (routeHandler?.path === routerPath) {
-    handler = routeHandler.handler;
-  }
+  } 
 
   // if we found handler then call the handler(means controller)
-  if (handler) {
     try {
-      const isAsync = handler.constructor.name === "AsyncFunction";
-
+      const isAsync = routeHandler.handler.constructor.name === "AsyncFunction";
       if (isAsync) {
-        const result  = await handler(context)
+        const result  = await routeHandler.handler(context)
         if(result) return handleResponse(result,responseHandler)
       }else{
-        const result = handler(context)
+        const result = routeHandler.handler(context)
         if(result) return handleResponse(result,responseHandler)
       }
     } catch (error) {
       console.error("Error in handler:", error);
       return ErrorHandler.internalServerError(`Error in handler: ${error}`);
     }
-  } else {
-    socket.write(ErrorHandler.RouteNotFoundError());
-  }
 };
 
 
@@ -87,7 +78,6 @@ function handleResponse(result, responseHandler) {
   } else if (typeof result === 'object') {
     return responseHandler.json(result);
   }
-  return null;
 }
 
 function sendError(socket, error) {
@@ -117,29 +107,33 @@ const extractDynamicParams = (routePattern, path) => {
 };
 
 // we are applying cors here
+// needs to work here more
 const applyCors = (req, res, config = {}) => {
   const origin = req.headers["origin"];
-  const allowedOrigins = config.origin || "*";
+  const allowedOrigins = config.origin || ["*"];
   const allowedMethods = config.methods || "GET,POST,PUT,DELETE,OPTIONS";
   const allowedHeaders = config.headers || ["Content-Type", "Authorization"];
 
+  // Set CORS headers
   res.setHeader("Access-Control-Allow-Methods", allowedMethods);
   res.setHeader("Access-Control-Allow-Headers", allowedHeaders);
-
-  if (
-    !allowedOrigins.includes("*") ||
-    (!allowedOrigins === "*" && !allowedOrigins.includes(origin))
-  ) {
-    return res.send("cors not allowed");
+  // Check if the origin is allowed
+  if (!allowedOrigins.includes("*") && !allowedOrigins.includes(origin)) {
+    return res.send("CORS not allowed");
   }
 
-  if (origin === "OPTIONS") {
+  // Set Access-Control-Allow-Origin
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigins.includes("*") ? "*" : origin);
+
+  // Handle preflight request
+  if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Max-Age", "86400");
-    return res.send("", 204);
+    return res.send('',204)
   }
 
-  return null;
+  return null; // Continue with the request
 };
+
 
 async function executeMiddleware(middlewares,context,socket) {
   for (let i = 0; i < middlewares.length; i++) {
