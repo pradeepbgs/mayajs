@@ -13,19 +13,19 @@ function parseRequestHeader(requestBuffer,cache) {
 
   const [headerSection] = request.split("\r\n\r\n");
   if (!headerSection) {
-    return error({ error: "Invalid request format: Missing header section" });
+    return { error: "Invalid request format: Missing header section" }
   }
 
   const [requestLine, ...headerLine] = headerSection.split("\r\n");
   if (!requestLine) {
-    return error({ error: "Invalid request format: Missing request line" });
+    return { error: "Invalid request format: Missing request line" }
   }
 
   // parse request line
   const [method, path, version] = requestLine.split(" ");
 
   if (!method || !path || !version) {
-    return error({ error: "Invalid request format: Incomplete request line" });
+    return { error: "Invalid request format: Incomplete request line" }
   }
 
   const [url, queryString] = path.split("?", 2);
@@ -86,7 +86,7 @@ function parseRequestBody(bodyBuffer, headers = {}) {
     } else if (contentType?.startsWith("multipart/form-data")) {
       const boundary = contentType.split("boundary=")[1];
       const { fields, files: parsedFiles } = parseMultipartFormData(bodyBuffer, boundary);
-      console.log(`this is fields`, fields);
+      // console.log(`this is fields`, fields);
       // console.log(files);
       parsedBody = fields;
       files = parsedFiles;

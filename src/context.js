@@ -45,5 +45,17 @@ module.exports = function createContext(request, responseHandler) {
       const cookies = this.req.cookies;
       return cookies[cookieName];
     },
+    getQuery(queryKey){
+      if (queryKey) {
+        return this.req.query[queryKey] || null
+      }
+      return this.req.query
+    },
+    getParams(paramsName){
+      if (paramsName) {
+        return this.req.params[paramsName] || null
+      }
+      return this.req.params
+    }
   };
 };

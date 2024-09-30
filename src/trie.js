@@ -8,6 +8,7 @@ class TrieNode {
     this.pattern = '';
     this.path = "";
     this.method = []
+    this.subMiddlewares= new Map()
   }
 }
 
@@ -44,7 +45,6 @@ class Trie {
       }
   
       node = node.children[key];
-  
       // Set dynamic route information if applicable
       node.isDynamic = isDynamic;
       node.pattern = segment;  // Store the actual pattern like ':id'
@@ -58,6 +58,11 @@ class Trie {
     node.path = path;  // Store the original path
   }
   
+  insertMidl(midl){
+    if (!this.root.subMiddlewares.has(midl)) {
+      this.root.subMiddlewares.set(midl)
+    }
+  }
   
 
   search(path,method) {

@@ -31,7 +31,9 @@ const { join } = require("path");
 const filePath = join(__dirname, "static");
 
 maya.get("/").handler((xl) => {
-  return xl.res.json({ msg: "Hello, world!" });
+  // like this - return xl.json()
+  // or like this
+  return { msg: "Hello, world!" }
 });
 
 // Render a HTML page

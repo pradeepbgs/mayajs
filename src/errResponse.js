@@ -7,8 +7,8 @@ const errResponse = (statusCode, statusMessage, contentType = "text/plain", data
 };
 
 class ErrorHandler {
-  invalidRequestError() {
-    return errResponse(400, "Bad Request", "text/plain", "Invalid request format");
+  invalidRequestError(err) {
+    return errResponse(400, "Bad Request", "text/plain", `${err?err:"invalid request format"}`);
   }
 
   internalServerError() {
@@ -16,9 +16,9 @@ class ErrorHandler {
   }
 
   RouteNotFoundError(path) {
-    console.error(`looks like you forgot to add this route bro ${path}`);
+    // console.error(`looks like you forgot to add this route - "${path}" bro`);
     return errResponse(404, "Not Found", "text/plain", 
-      `404 Not Found: The path ${path} leads to a black hole. It's lost in space!`);
+      `cannot get ${path}\n 404 Not Found: The path ${path} leads to a black hole. It's lost in space!`);
   }
 
   methodNotAllowedError() {
