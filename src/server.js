@@ -4,6 +4,11 @@ const fs = require("fs");
 const handleConnection = require("./handleSocketConnection.js");
 const Trie = require("./trie.js");
 
+function rateLimiter(){
+  
+}
+
+
 class Maya {
   constructor() {
     this.sslOptions = null;
@@ -37,7 +42,9 @@ class Maya {
       ? tls.createServer(this.sslOptions, (socket) =>
           handleConnection(socket, this)
         )
-      : net.createServer((socket) => handleConnection(socket, this));
+      : net.createServer((socket) => {
+        handleConnection(socket, this)
+      });
   }
 
   listen(port = 3000, callback) {

@@ -45,19 +45,31 @@ class Router extends Maya{
         return this.#defineRoute("GET", path);
       }
     
-      post(path) {
+      post(path,...handlers) {
+        if (handlers.length > 0) {
+          return this.#addMiddlewareAndHandler("POST", path, handlers);
+        }
         return this.#defineRoute("POST", path);
       }
     
-      put(path) {
+      put(path,...handlers) {
+        if (handlers.length > 0) {
+          return this.#addMiddlewareAndHandler("PUT", path, handlers);
+        }
         return this.#defineRoute("PUT", path);
       }
     
-      delete(path) {
+      delete(path,...handlers) {
+        if (handlers.length > 0) {
+          return this.#addMiddlewareAndHandler("DELETE", path, handlers);
+        }
         return this.#defineRoute("DELETE", path);
       }
     
-      patch(path) {
+      patch(path,...handlers) {
+        if (handlers.length > 0) {
+          return this.#addMiddlewareAndHandler("PATCH", path, handlers);
+        }
         return this.#defineRoute("PATCH", path);
       }
 }

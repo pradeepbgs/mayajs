@@ -31,7 +31,6 @@ module.exports = async function handleConnection(socket, maya) {
   const responseHandler = new ResponseHandler(socket)
   socket.on("data", async (chunk) => {
     // const startTime = Date.now();
-
     buffer = Buffer.concat([buffer, chunk]);
 
     // we did setImmediate so if it takes times so it doesnt block the main thread
@@ -48,14 +47,13 @@ module.exports = async function handleConnection(socket, maya) {
         }
 
         isHeaderParsed = true;
-        // const contentLength = parseInt(
-        //   parsedHeader?.headers["content-length"] || 0,
-        //   10
-        // );
-
+        const contentLength = parseInt(
+          parsedHeader?.headers["content-length"] || 0,
+          10
+        );
         // remove header portion from buffer
         buffer = buffer.slice(headerEndIndex + 4);
-        if (parsedHeader.method === "GET") {
+        if (parsedHeader.method === "GET" || (contentLength <=0 && parsedHeader.method === "POST")) {
           // call the reqHandler because we dont need to parse body
           handleRequest(socket, parsedHeader, maya,responseHandler);
           return;
