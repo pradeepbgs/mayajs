@@ -55,7 +55,7 @@ class ResponseHandler{
     // this.cache.set(cacheKey, { response, timeStamp });
       if(this.socket.writable){
       this.socket.write(response)
-      this.socket.end()
+      return this.socket.end()
      }
   }
 

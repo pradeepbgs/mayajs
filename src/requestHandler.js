@@ -9,8 +9,7 @@ module.exports = async function handleRequest(
   responseHandler
 ) {
   if (request?.path === "/favicon.ico") {
-    socket.end();
-    return;
+    return socket.end();  
   }
   const context = createContext(request,responseHandler)
 
@@ -32,31 +31,19 @@ module.exports = async function handleRequest(
   // execute midlleware here
   const midllewares = [
     ...(maya.globalMidlleware || []),
-    ...(maya.midllewares.get(request.path) || []),
-  ];
-  if (midllewares.length > 0) {
-    const res = await executeMiddleware(midllewares,context);
-    if (res && socket.writable) {
-      socket.write(res);
-      socket.end();
-      return;
-    }
-  }
+    ...(maya.midllewares.get(request.path) || [])
+  ]
+  
+  await executeMiddleware(midllewares,context,socket);
 
   // find the Handler based on req path
   const routeHandler = maya.trie.search(routerPath, method);
   if (!routerPath || !routeHandler || !routeHandler.handler) {
-    const res = ErrorHandler.RouteNotFoundError(path);
-    socket.write(res);
-    socket.end();
-    return;
+    return sendError(socket,ErrorHandler.RouteNotFoundError())
   }
 
   if (routeHandler?.method !== method) {
-    const res = ErrorHandler.methodNotAllowedError();
-    socket.write(res);
-    socket.end();
-    return;
+    return sendError(socket, ErrorHandler.methodNotAllowedError());
   }
 
   let handler;
@@ -78,30 +65,35 @@ module.exports = async function handleRequest(
       const isAsync = handler.constructor.name === "AsyncFunction";
 
       if (isAsync) {
-        const res  = await handler(context)
-        if(res && typeof res === 'string'){
-         return responseHandler.send(res)
-        } else if (res && typeof res === 'object'){
-          return responseHandler.json(res)
-        }
+        const result  = await handler(context)
+        if(result) return handleResponse(result,responseHandler)
       }else{
-        const res = handler(context)
-        if(res && typeof res === 'string'){
-          return responseHandler.send(res)
-         } else if (res && typeof res === 'object'){
-           return responseHandler.json(res)
-         }
+        const result = handler(context)
+        if(result) return handleResponse(result,responseHandler)
       }
     } catch (error) {
       console.error("Error in handler:", error);
-      return ErrorHandler.internalServerError();
-    } finally {
-      socket.end();
+      return ErrorHandler.internalServerError(`Error in handler: ${error}`);
     }
   } else {
-    return ErrorHandler.RouteNotFoundError();
+    socket.write(ErrorHandler.RouteNotFoundError());
   }
 };
+
+
+function handleResponse(result, responseHandler) {
+  if (typeof result === 'string') {
+    return responseHandler.send(result);
+  } else if (typeof result === 'object') {
+    return responseHandler.json(result);
+  }
+  return null;
+}
+
+function sendError(socket, error) {
+  socket.write(error);
+  socket.end();
+}
 
 // if user made dynamic rooute -> /route/:id then extract it
 const extractDynamicParams = (routePattern, path) => {
@@ -149,10 +141,19 @@ const applyCors = (req, res, config = {}) => {
   return null;
 };
 
-async function executeMiddleware(middlewares,context) {
+async function executeMiddleware(middlewares,context,socket) {
   for (let i = 0; i < middlewares.length; i++) {
     const middleware = middlewares[i];
-    const result = await Promise.resolve(middleware(context));
-    if (result) return result;
+    try {
+      const result = await Promise.resolve(middleware(context, socket));
+      if (result || !socket.writable) {
+        break;
+      }
+    } catch (error) {
+      console.error("Middleware error:", error);
+      socket.write(JSON.stringify({ message: "Middleware error", status: 500 }));
+      socket.end();
+      break; 
+    }
   }
 }
