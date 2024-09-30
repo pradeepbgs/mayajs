@@ -73,13 +73,10 @@ module.exports = async function handleRequest(
       }
     } catch (error) {
       console.error("Error in handler:", error);
-      return ErrorHandler.internalServerError();
-    } finally {
-      socket.end()
+      return ErrorHandler.internalServerError(`Error in handler: ${error}`);
     }
   } else {
     socket.write(ErrorHandler.RouteNotFoundError());
-    socket.end();
   }
 };
 
