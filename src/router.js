@@ -1,4 +1,4 @@
-const Maya = require("./server.js");
+const {Maya} = require("./server.js");
 
 class Router extends Maya{
     constructor() {

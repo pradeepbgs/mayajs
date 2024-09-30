@@ -4,9 +4,37 @@ const fs = require("fs");
 const handleConnection = require("./handleSocketConnection.js");
 const Trie = require("./trie.js");
 
-function rateLimiter(){
+const rateLimit = (props) => {
+  const { time : windowMs, max, message } = props;
+  const requests = new Map();
   
-}
+  return async (xl,socket) => {
+    const currentTime = new Date();
+    const socketIP = socket.remoteAddress;
+
+    if (!requests.has(socketIP)) {
+      requests.set(socketIP,{count:0,startTime:Date.now()})
+    }
+
+    const requestInfo = requests.get(socketIP)
+    // check if windows time has passed
+    if (currentTime-requestInfo.startTime > windowMs) {
+      // it means set time of server has passed
+      requestInfo.count=1;
+      requestInfo.startTime=currentTime;
+    } else {
+      requestInfo.count++;
+    }
+
+    if(requestInfo.count > max){
+      xl.json({error:message})
+      return socket.end()
+    }
+
+   await xl.next()
+  }
+};
+
 
 
 class Maya {
@@ -194,4 +222,7 @@ class Maya {
   }
 }
 
-module.exports = Maya;
+module.exports = {
+  Maya,
+  rateLimit
+};

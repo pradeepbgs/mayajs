@@ -33,11 +33,8 @@ module.exports = async function handleRequest(
     ...(maya.globalMidlleware || []),
     ...(maya.midllewares.get(request.path) || [])
   ]
-  const middlewareResult = await executeMiddleware(midllewares,context);
-    if (middlewareResult && socket.writable) {
-      socket.write(middlewareResult);
-      return socket.end();
-  }
+  
+  await executeMiddleware(midllewares,context,socket);
 
   // find the Handler based on req path
   const routeHandler = maya.trie.search(routerPath, method);
@@ -147,10 +144,19 @@ const applyCors = (req, res, config = {}) => {
   return null;
 };
 
-async function executeMiddleware(middlewares,context) {
+async function executeMiddleware(middlewares,context,socket) {
   for (let i = 0; i < middlewares.length; i++) {
     const middleware = middlewares[i];
-    const result = await Promise.resolve(middleware(context));
-    if (result) return result;
+    try {
+      const result = await Promise.resolve(middleware(context, socket));
+      if (result || !socket.writable) {
+        break;
+      }
+    } catch (error) {
+      console.error("Middleware error:", error);
+      socket.write(JSON.stringify({ message: "Middleware error", status: 500 }));
+      socket.end();
+      break; 
+    }
   }
 }
