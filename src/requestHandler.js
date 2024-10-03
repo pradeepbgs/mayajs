@@ -2,16 +2,12 @@ const ErrorHandler = require("./errResponse.js");
 const createContext = require('./context.js');
 
 
-module.exports = async function handleRequest(
-  socket,
-  request,
-  maya,
-  responseHandler
-) {
+module.exports = async function handleRequest(socket,request,maya,responseHandler) {
   if (request?.path === "/favicon.ico") {
     socket.end();  
     return;
   }
+
   const context = createContext(request,responseHandler)
 
   // Parsing the request
@@ -22,11 +18,7 @@ module.exports = async function handleRequest(
 
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
-    const res = await applyCors(request, responseHandler, maya.corsConfig);
-    if (res) {
-      socket.write(res);
-      socket.end();
-    }
+    await applyCors(request, responseHandler, maya.corsConfig);
   }
 
   // execute midlleware here
@@ -47,27 +39,23 @@ module.exports = async function handleRequest(
     return sendError(socket, ErrorHandler.methodNotAllowedError());
   }
 
-  let dynamicParams = {};
-  if (routeHandler?.isDynamic) {
-    dynamicParams = extractDynamicParams(routeHandler.path, path);
-    if (dynamicParams) {
-      request.params = dynamicParams;
-    }
-  } 
+  const dynamicParams = routeHandler.isDynamic 
+  ? extractDynamicParams(routeHandler.path,path)
+  : {}
+  request.params = dynamicParams 
 
   // if we found handler then call the handler(means controller)
     try {
       const isAsync = routeHandler.handler.constructor.name === "AsyncFunction";
-      if (isAsync) {
-        const result  = await routeHandler.handler(context)
-        if(result) return handleResponse(result,responseHandler)
-      }else{
-        const result = routeHandler.handler(context)
-        if(result) return handleResponse(result,responseHandler)
-      }
+      const result = isAsync 
+      ? await routeHandler.handler(context)
+      : routeHandler.handler(context)
+
+      if(result) return handleResponse(result,responseHandler);
     } catch (error) {
       console.error("Error in handler:", error);
-      return ErrorHandler.internalServerError(`Error in handler: ${error}`);
+      return sendError(socket, 
+        ErrorHandler.internalServerError(`Error in handler at ${request.path}: ${error.message}\nStack Trace: ${error.stack}`));
     }
 };
 
@@ -80,10 +68,6 @@ function handleResponse(result, responseHandler) {
   }
 }
 
-function sendError(socket, error) {
-  socket.write(error);
-  socket.end();
-}
 
 // if user made dynamic rooute -> /route/:id then extract it
 const extractDynamicParams = (routePattern, path) => {
@@ -119,7 +103,7 @@ const applyCors = (req, res, config = {}) => {
   res.setHeader("Access-Control-Allow-Headers", allowedHeaders);
   // Check if the origin is allowed
   if (!allowedOrigins.includes("*") && !allowedOrigins.includes(origin)) {
-    return res.send("CORS not allowed");
+    return res.send("CORS not allowed",403);
   }
 
   // Set Access-Control-Allow-Origin
@@ -131,7 +115,7 @@ const applyCors = (req, res, config = {}) => {
     return res.send('',204)
   }
 
-  return null; // Continue with the request
+  return null;
 };
 
 
@@ -145,9 +129,14 @@ async function executeMiddleware(middlewares,context,socket) {
       }
     } catch (error) {
       console.error("Middleware error:", error);
-      socket.write(JSON.stringify({ message: "Middleware error", status: 500 }));
-      socket.end();
+      sendError(socket,ErrorHandler.internalServerError(error))
       break; 
     }
   }
+}
+
+function sendError(socket, error) {
+  socket.write(error);
+  socket.end();
+  return;
 }
