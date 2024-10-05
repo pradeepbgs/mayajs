@@ -26,7 +26,7 @@ const cache = new Cache();
 module.exports = async function handleConnection(socket, maya) {
   let buffer = Buffer.alloc(0);
   let parsedHeader;
-  const responseHandler = new ResponseHandler(socket)
+  const responseHandler = new ResponseHandler(socket, maya.staticFileServeLocation)
   socket.on("data", async (chunk) => {
     // const startTime = Date.now();
     buffer = Buffer.concat([buffer, chunk]);

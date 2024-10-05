@@ -4,10 +4,11 @@ const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 
 class ResponseHandler{
-  constructor(socket) {
+  constructor(socket,staticFileServeLocation) {
     this.headers = {};
     this.cache = new Map();
     this.socket = socket;
+    this.staticFileLocation = staticFileServeLocation
   }
 
   setHeader(key, value) {
@@ -74,9 +75,9 @@ class ResponseHandler{
     return this._generateResponse(data, statusCode, statusMessage);
   }
 
-  async render(filePath,templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
-    const extname = path.extname(templatePath);
-    const RealPath = path.join(filePath,templatePath)
+  async render(filename, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
+    const extname = path.extname(filename);
+    const RealPath = path.join(this.staticFileLocation,filename)
     if (extname === ".html") {
       try {
         const file = await fs.promises.readFile(RealPath,'utf-8')
