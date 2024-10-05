@@ -2,15 +2,12 @@ const ErrorHandler = require("./errResponse.js");
 const createContext = require('./context.js');
 
 
-module.exports = async function handleRequest(
-  socket,
-  request,
-  maya,
-  responseHandler
-) {
+module.exports = async function handleRequest(socket,request,maya,responseHandler) {
   if (request?.path === "/favicon.ico") {
-    return socket.end();  
+    socket.end();  
+    return;
   }
+
   const context = createContext(request,responseHandler)
 
   // Parsing the request
@@ -21,11 +18,7 @@ module.exports = async function handleRequest(
 
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
-    const res = await applyCors(request, responseHandler, maya.corsConfig);
-    if (res) {
-      socket.write(res);
-      socket.end();
-    }
+    await applyCors(request, responseHandler, maya.corsConfig);
   }
 
   // execute midlleware here
@@ -33,7 +26,7 @@ module.exports = async function handleRequest(
     ...(maya.globalMidlleware || []),
     ...(maya.midllewares.get(request.path) || [])
   ]
-  
+
   await executeMiddleware(midllewares,context,socket);
 
   // find the Handler based on req path
@@ -46,38 +39,24 @@ module.exports = async function handleRequest(
     return sendError(socket, ErrorHandler.methodNotAllowedError());
   }
 
-  let handler;
-  let dynamicParams = {};
-
-  if (routeHandler?.isDynamic) {
-    dynamicParams = extractDynamicParams(routeHandler.path, path);
-    if (dynamicParams) {
-      request.params = dynamicParams;
-      handler = routeHandler.handler;
-    }
-  } else if (routeHandler?.path === routerPath) {
-    handler = routeHandler.handler;
-  }
+  const dynamicParams = routeHandler.isDynamic 
+  ? extractDynamicParams(routeHandler.path,path)
+  : {}
+  request.params = dynamicParams 
 
   // if we found handler then call the handler(means controller)
-  if (handler) {
     try {
-      const isAsync = handler.constructor.name === "AsyncFunction";
+      const isAsync = routeHandler.handler.constructor.name === "AsyncFunction";
+      const result = isAsync 
+      ? await routeHandler.handler(context)
+      : routeHandler.handler(context)
 
-      if (isAsync) {
-        const result  = await handler(context)
-        if(result) return handleResponse(result,responseHandler)
-      }else{
-        const result = handler(context)
-        if(result) return handleResponse(result,responseHandler)
-      }
+      if(result) return handleResponse(result,responseHandler);
     } catch (error) {
       console.error("Error in handler:", error);
-      return ErrorHandler.internalServerError(`Error in handler: ${error}`);
+      return sendError(socket, 
+        ErrorHandler.internalServerError(`Error in handler at ${request.path}: ${error.message}\nStack Trace: ${error.stack}`));
     }
-  } else {
-    socket.write(ErrorHandler.RouteNotFoundError());
-  }
 };
 
 
@@ -87,13 +66,8 @@ function handleResponse(result, responseHandler) {
   } else if (typeof result === 'object') {
     return responseHandler.json(result);
   }
-  return null;
 }
 
-function sendError(socket, error) {
-  socket.write(error);
-  socket.end();
-}
 
 // if user made dynamic rooute -> /route/:id then extract it
 const extractDynamicParams = (routePattern, path) => {
@@ -117,29 +91,33 @@ const extractDynamicParams = (routePattern, path) => {
 };
 
 // we are applying cors here
+// needs to work here more
 const applyCors = (req, res, config = {}) => {
   const origin = req.headers["origin"];
-  const allowedOrigins = config.origin || "*";
+  const allowedOrigins = config.origin || ["*"];
   const allowedMethods = config.methods || "GET,POST,PUT,DELETE,OPTIONS";
   const allowedHeaders = config.headers || ["Content-Type", "Authorization"];
 
+  // Set CORS headers
   res.setHeader("Access-Control-Allow-Methods", allowedMethods);
   res.setHeader("Access-Control-Allow-Headers", allowedHeaders);
-
-  if (
-    !allowedOrigins.includes("*") ||
-    (!allowedOrigins === "*" && !allowedOrigins.includes(origin))
-  ) {
-    return res.send("cors not allowed");
+  // Check if the origin is allowed
+  if (!allowedOrigins.includes("*") && !allowedOrigins.includes(origin)) {
+    return res.send("CORS not allowed",403);
   }
 
-  if (origin === "OPTIONS") {
+  // Set Access-Control-Allow-Origin
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigins.includes("*") ? "*" : origin);
+
+  // Handle preflight request
+  if (req.method === "OPTIONS") {
     res.setHeader("Access-Control-Max-Age", "86400");
-    return res.send("", 204);
+    return res.send('',204)
   }
 
   return null;
 };
+
 
 async function executeMiddleware(middlewares,context,socket) {
   for (let i = 0; i < middlewares.length; i++) {
@@ -151,9 +129,14 @@ async function executeMiddleware(middlewares,context,socket) {
       }
     } catch (error) {
       console.error("Middleware error:", error);
-      socket.write(JSON.stringify({ message: "Middleware error", status: 500 }));
-      socket.end();
+      sendError(socket,ErrorHandler.internalServerError(error))
       break; 
     }
   }
+}
+
+function sendError(socket, error) {
+  socket.write(error);
+  socket.end();
+  return;
 }
