@@ -3,10 +3,11 @@ const fs = require("fs");
 const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 
+const cache = new Map();
 class ResponseHandler{
   constructor(socket,staticFileServeLocation) {
     this.headers = {};
-    this.cache = new Map();
+    // this.cache = new Map();
     this.socket = socket;
     this.staticFileLocation = staticFileServeLocation
   }
@@ -17,11 +18,15 @@ class ResponseHandler{
 
   _generateResponse(data, statusCode = 200, statusMessage = "OK", contentType = "text/plain") {
     // cehck if cache has this cache key data then give this cached data;
-    // const cacheKey = `${statusCode}-${contentType}-${data}`;
-    // const cached = this.cache.get(cacheKey);
-    // if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    //   return cached.value;
-    // }
+    const cacheKey = `${statusCode}-${contentType}-${data}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      if(this.socket.writable){
+        this.socket.write(cached.response)
+        this.socket.end();
+        return;
+       }
+    }
 
     let response = `HTTP/1.1 ${statusCode} ${statusMessage}\r\n`;
     response += `Content-Type: ${contentType}\r\n`;
@@ -48,12 +53,13 @@ class ResponseHandler{
     response += data;
 
     // set the res in cache
-    // const timeStamp = Date.now();
-    // if (this.cache.size >= MAX_CACHE_SIZE) {
-    //   const oldestKey = cache.keys().next().value;
-    //   this.cache.delete(oldestKey);
-    // }
-    // this.cache.set(cacheKey, { response, timeStamp });
+    const timeStamp = Date.now();
+    if (cache.size >= MAX_CACHE_SIZE) {
+      const oldestKey = cache.keys().next().value;
+      cache.delete(oldestKey);
+    }
+    cache.set(cacheKey, { response, timestamp: timeStamp });
+
       if(this.socket.writable){
       this.socket.write(response)
       this.socket.end();
@@ -75,9 +81,10 @@ class ResponseHandler{
     return this._generateResponse(data, statusCode, statusMessage);
   }
 
-  async render(filename, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
-    const extname = path.extname(filename);
-    const RealPath = path.join(this.staticFileLocation,filename)
+  async render(templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
+    const extname = path.extname(templatePath);
+    const RealPath = path.join(this.staticFileLocation,templatePath)
+
     if (extname === ".html") {
       try {
         const file = await fs.promises.readFile(RealPath,'utf-8')

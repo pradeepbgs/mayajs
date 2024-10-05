@@ -46,11 +46,7 @@ module.exports = async function handleRequest(socket,request,maya,responseHandle
 
   // if we found handler then call the handler(means controller)
     try {
-      const isAsync = routeHandler.handler.constructor.name === "AsyncFunction";
-      const result = isAsync 
-      ? await routeHandler.handler(context)
-      : routeHandler.handler(context)
-
+      const result = await routeHandler.handler(context)
       if(result) return handleResponse(result,responseHandler);
     } catch (error) {
       console.error("Error in handler:", error);
