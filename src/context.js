@@ -32,8 +32,8 @@ module.exports = function createContext(request, responseHandler) {
     text(data, statusCode = 200) {
       return this.res.send(data, statusCode);
     },
-    html( filename, statusCode = 200) {
-      return this.res.render(filename, "", (statusCode = 200));
+    html(filePath, templatePath, statusCode = 200) {
+      return this.res.render(filePath, templatePath, "", (statusCode = 200));
     },
     redirect(url, statusCode = 302) {
       return this.res.redirect(url, statusCode);
@@ -42,13 +42,8 @@ module.exports = function createContext(request, responseHandler) {
       this.res.cookie(name, value, options);
     },
     getCookie(cookieName) {
-      if (cookieName) {
-      return this.req.cookies[cookieName];
-      }
-      else {
-        return this.req.cookies;
-      }
-      
+      const cookies = this.req.cookies;
+      return cookies[cookieName];
     },
     getQuery(queryKey){
       if (queryKey) {

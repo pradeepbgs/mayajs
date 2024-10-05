@@ -121,9 +121,9 @@ class Maya {
   }
 
   // set the path of serving static file
-  serveStatic(path) {
-    this.staticFileServeLocation = path;
-  }
+  // serveStatic(path) {
+  //   this.staticFileServeLocation = path;
+  // }
 
   async register(handlerInstance, pathPrefix = "") {
     const routeEntries = Object.entries(handlerInstance.trie.root.children);

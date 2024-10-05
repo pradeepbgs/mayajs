@@ -1,23 +1,25 @@
 const parseMultipartFormData  =  require("./multipartFormDataParser.js");
-
+// const {ptr, CString } = require("bun:ffi");
+// we are using this
 
 function parseRequestHeader(requestBuffer,cache) {
   const request = requestBuffer.toString();
+  // const buffer = Buffer.from(request + "\0");
 
-  const headerIndex = request.indexOf("\r\n\r\n");
-  if (headerIndex === -1) {
+  // const responsePtr = parse_headers(ptr(buffer));
+  // const response = new CString(responsePtr);
+
+  // console.log(JSON.parse(response))
+
+  const [headerSection] = request.split("\r\n\r\n");
+  if (!headerSection) {
     return { error: "Invalid request format: Missing header section" }
   }
 
-  const headerSection = request.substring(0,headerIndex);
-
-  const requestLineEndIndex = headerSection.indexOf('\r\n')
-  if (requestLineEndIndex === -1) {
-    return { error: "Invalid request format: Missing request line" };
+  const [requestLine, ...headerLine] = headerSection.split("\r\n");
+  if (!requestLine) {
+    return { error: "Invalid request format: Missing request line" }
   }
-
-  const requestLine = headerSection.substring(0,requestLineEndIndex)
-  const headerLine = headerSection.substring(requestLineEndIndex+2)
 
   // parse request line
   const [method, path, version] = requestLine.split(" ");
@@ -29,42 +31,37 @@ function parseRequestHeader(requestBuffer,cache) {
   const [url, queryString] = path.split("?", 2);
   const queryParams = new URLSearchParams(queryString);
   //  generate cache key
-  const cacheKey = `${method}:${url}?${queryParams}:${headerLine}`;
+  const cacheKey = `${method}:${url}?${queryParams}:${JSON.stringify(headerLine)}`;
   if (method === "GET") {
     const cachedResponse = cache.getCached(cacheKey);
-    if (cachedResponse) return cachedResponse;
+    if (cachedResponse) {
+      return cachedResponse;
+    }
   }
 
   // parse headers and cookie
   const headers = {};
-  const cookies = {};
-  
-  headerLine.split('\r\n').forEach(line =>{
-    const separatorIndex = line.indexOf(": ")
-    if (separatorIndex === -1) return;
-
-    const key = line.substring(0,separatorIndex).toLowerCase()
-    const value = line.substring(separatorIndex+2)
-
-    headers[key] = value;
-
-    if(key==='cookie'){
-      value.split(";").forEach(cookie=>{
-        const [cookiekey,cookieValue] = cookie.trim().split("=")
-        cookies[cookiekey] = cookieValue
-      })
+  const Cookies = {};
+  for (const line of headerLine) {
+    const [key, value] = line.split(": ");
+    headers[key.toLowerCase()] = value;
+    if (key.toLowerCase() === "cookie") {
+      value.split(";").forEach((cookie) => {
+        const [Cookiekey, Cookievalue] = cookie.trim().split("=");
+        Cookies[Cookiekey] = decodeURIComponent(Cookievalue);
+      });
     }
+  }
 
-  })
-
+  let params;
   const res = {
     method,
     path,
     version,
     headers,
     query: queryParams,
-    cookies,
-    params :undefined,
+    cookies: Cookies,
+    params,
   };
   if (method === "GET") {
     cache.setCache(cacheKey, res);

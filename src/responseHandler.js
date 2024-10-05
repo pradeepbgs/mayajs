@@ -4,11 +4,10 @@ const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 
 class ResponseHandler{
-  constructor(socket,staticFileServeLocation) {
+  constructor(socket) {
     this.headers = {};
     this.cache = new Map();
     this.socket = socket;
-    this.staticFileLocation = staticFileServeLocation
   }
 
   setHeader(key, value) {
@@ -56,28 +55,22 @@ class ResponseHandler{
     // this.cache.set(cacheKey, { response, timeStamp });
       if(this.socket.writable){
       this.socket.write(response)
-      this.socket.end();
-      return;
+      return this.socket.end()
      }
   }
 
   json(data, statusCode = 200, statusMessage = "OK", contentType = "application/json") {
-    try {
-      return this._generateResponse(JSON.stringify(data||{}),
-       statusCode, statusMessage, "application/json");
-    } catch (error) {
-      console.error("Error serializing JSON:", error);
-      return this._generateResponse('{"error":"Error serializing JSON"}', 500, "Internal Server Error", "application/json");
-    }
+    return this._generateResponse(JSON.stringify(data),
+     statusCode, statusMessage, "application/json");
   }
 
   send(data, statusCode = 200, statusMessage = "OK") {
     return this._generateResponse(data, statusCode, statusMessage);
   }
 
-  async render(filename, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
-    const extname = path.extname(filename);
-    const RealPath = path.join(this.staticFileLocation,filename)
+  async render(filePath,templatePath, data = {}, statusCode = 200, statusMessage = "OK", contentType = "text/html") {
+    const extname = path.extname(templatePath);
+    const RealPath = path.join(filePath,templatePath)
     if (extname === ".html") {
       try {
         const file = await fs.promises.readFile(RealPath,'utf-8')
