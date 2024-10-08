@@ -3,7 +3,6 @@ const ErrorHandler = require("./errResponse.js");
 const { Buffer } = require("buffer");
 const Cache = require("./cache.js");
 const {parseRequestBody,parseRequestHeader} = require("./requestParser.js");
-const ResponseHandler = require("./responseHandler.js");
 // const { cc } = require("bun:ffi");
 // const { join } = require("path");
 
@@ -26,7 +25,6 @@ const cache = new Cache();
 module.exports = async function handleConnection(socket, maya) {
   let buffer = Buffer.alloc(0);
   let parsedHeader;
-  const responseHandler = new ResponseHandler(socket, maya.staticFileServeLocation)
   socket.on("data", async (chunk) => {
     // const startTime = Date.now();
     buffer = Buffer.concat([buffer, chunk]);
@@ -61,7 +59,7 @@ module.exports = async function handleConnection(socket, maya) {
 
         if (parsedHeader.method === "GET" || (contentLength <=0)) {
           // call the reqHandler because we dont need to parse body
-          handleRequest(socket, parsedHeader, maya,responseHandler);
+          handleRequest(socket, parsedHeader, maya);
           parsedHeader=null;
           return;
         }
@@ -78,7 +76,7 @@ module.exports = async function handleConnection(socket, maya) {
         }
 
         const finalResult = {...parsedHeader, ...parsedBody};
-        handleRequest(socket, finalResult, maya,responseHandler);
+        handleRequest(socket, finalResult, maya);
 
         buffer = buffer.slice(contentLength)
         parsedHeader=null;

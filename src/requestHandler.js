@@ -1,14 +1,15 @@
 const ErrorHandler = require("./errResponse.js");
 const createContext = require('./context.js');
 
+const cache = new Map()
 
-module.exports = async function handleRequest(socket,request,maya,responseHandler) {
+module.exports = async function handleRequest(socket,request,maya) {
   if (request?.path === "/favicon.ico") {
     socket.end();  
     return;
   }
 
-  const context = createContext(request,responseHandler)
+  const context = createContext(socket,request)
 
   // Parsing the request
   const { method, path } = request;
@@ -18,7 +19,7 @@ module.exports = async function handleRequest(socket,request,maya,responseHandle
 
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
-    await applyCors(request, responseHandler, maya.corsConfig);
+    await applyCors(request, context, maya.corsConfig);
   }
 
   // execute midlleware here
@@ -46,8 +47,9 @@ module.exports = async function handleRequest(socket,request,maya,responseHandle
 
   // if we found handler then call the handler(means controller)
     try {
-      const result = await routeHandler.handler(context)
-      if(result) return handleResponse(result,responseHandler);
+     const result = await routeHandler.handler(context)
+
+      if(result) return handleResponse(socket,result);
     } catch (error) {
       console.error("Error in handler:", error);
       return sendError(socket, 
@@ -56,17 +58,35 @@ module.exports = async function handleRequest(socket,request,maya,responseHandle
 };
 
 
-function handleResponse(result, responseHandler) {
+function handleResponse(socket,result) {
   if (typeof result === 'string') {
-    return responseHandler.send(result);
+    let res =`HTTP/1.1 200 ok\r\n`;
+    res += `Content-Type: text/plain\r\n`; 
+    res += "\r\n";
+    res += result
+    socket.write(res)
+    socket.end()
+    return;
   } else if (typeof result === 'object') {
-    return responseHandler.json(result);
+    let res =`HTTP/1.1 200 ok\r\n`;
+    res += `Content-Type: application/json\r\n`; 
+    res += "\r\n";
+    res += JSON.stringify(result)
+    socket.write(res)
+    socket.end()
+    return
   }
 }
 
 
 // if user made dynamic rooute -> /route/:id then extract it
 const extractDynamicParams = (routePattern, path) => {
+  const cacheKey = `${routePattern}-${path}`
+
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey)
+  }
+
   const object = {};
   const routeSegments = routePattern.split("/");
   const [pathWithoutQuery] = path.split("?"); // Ignore the query string in the path
@@ -82,33 +102,43 @@ const extractDynamicParams = (routePattern, path) => {
       object[dynamicKey] = pathSegments[index]; // Map the path segment to the key
     }
   });
-
+  cache.set(cacheKey,object)
   return object;
 };
 
 // we are applying cors here
 // needs to work here more
-const applyCors = (req, res, config = {}) => {
+const applyCors = (req, ctx, config = {}) => {
   const origin = req.headers["origin"];
   const allowedOrigins = config.origin || ["*"];
   const allowedMethods = config.methods || "GET,POST,PUT,DELETE,OPTIONS";
   const allowedHeaders = config.headers || ["Content-Type", "Authorization"];
+  const allowCredentials = config.credentials || false;
+  const exposeHeaders = config.exposeHeaders || [];
 
   // Set CORS headers
-  res.setHeader("Access-Control-Allow-Methods", allowedMethods);
-  res.setHeader("Access-Control-Allow-Headers", allowedHeaders);
+  ctx.setHeader("Access-Control-Allow-Methods", allowedMethods);
+  ctx.setHeader("Access-Control-Allow-Headers", allowedHeaders);
+
+  if(allowCredentials){
+    ctx.setHeader("Access-Control-Allow-Credentials","true")
+  }
+  if (exposeHeaders.length) {
+    ctx.setHeader("Access-Control-Expose-Headers", exposeHeaders.join(", "));
+  }
+
   // Check if the origin is allowed
   if (!allowedOrigins.includes("*") && !allowedOrigins.includes(origin)) {
-    return res.send("CORS not allowed",403);
+    return ctx.text("CORS not allowed",403);
   }
 
   // Set Access-Control-Allow-Origin
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigins.includes("*") ? "*" : origin);
+  ctx.setHeader("Access-Control-Allow-Origin", allowedOrigins.includes("*") ? "*" : origin);
 
   // Handle preflight request
   if (req.method === "OPTIONS") {
-    res.setHeader("Access-Control-Max-Age", "86400");
-    return res.send('',204)
+    ctx.setHeader("Access-Control-Max-Age", "86400");
+    return ctx.text('',204)
   }
 
   return null;
