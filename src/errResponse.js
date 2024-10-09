@@ -18,7 +18,7 @@ class ErrorHandler {
   RouteNotFoundError(path) {
     // console.error(`looks like you forgot to add this route - "${path}" bro`);
     return errResponse(404, "Not Found", "text/plain", 
-      `cannot get ${path}\n 404 Not Found: The path ${path} leads to a black hole. It's lost in space!`);
+      `cannot get ${path}\n`);
   }
 
   methodNotAllowedError() {

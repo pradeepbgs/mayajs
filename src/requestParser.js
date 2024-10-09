@@ -1,6 +1,5 @@
 const parseMultipartFormData  =  require("./multipartFormDataParser.js");
 
-
 function parseRequestHeader(requestBuffer,cache) {
   const request = requestBuffer.toString();
 
@@ -25,19 +24,19 @@ function parseRequestHeader(requestBuffer,cache) {
   if (!method || !path || !version) {
     return { error: "Invalid request format: Incomplete request line" }
   }
+  // console.log(headerLine);
+  // const queryParams = path.includes('?') ? path.split('?')[1] : ''; 
+  // const cookies = headers["cookie"] || '';
+  // const cacheKey = `${method}:${path.split('?')[0]}?${queryParams}:${cookies}`;
 
-  const [url, queryString] = path.split("?", 2);
-  const queryParams = new URLSearchParams(queryString);
-  //  generate cache key
-  const cacheKey = `${method}:${url}?${queryParams}:${headerLine}`;
-  if (method === "GET") {
-    const cachedResponse = cache.getCached(cacheKey);
-    if (cachedResponse) return cachedResponse;
-  }
+  // if (method === "GET") {
+  //   console.log('object');
+  //   const cachedResponse = cache.getCached(cacheKey);
+  //   if (cachedResponse) return cachedResponse;
+  // }
 
-  // parse headers and cookie
+  // parse headers
   const headers = {};
-  const cookies = {};
   
   headerLine.split('\r\n').forEach(line =>{
     const separatorIndex = line.indexOf(": ")
@@ -47,14 +46,6 @@ function parseRequestHeader(requestBuffer,cache) {
     const value = line.substring(separatorIndex+2)
 
     headers[key] = value;
-
-    if(key==='cookie'){
-      value.split(";").forEach(cookie=>{
-        const [cookiekey,cookieValue] = cookie.trim().split("=")
-        cookies[cookiekey] = cookieValue
-      })
-    }
-
   })
 
   const res = {
@@ -62,13 +53,10 @@ function parseRequestHeader(requestBuffer,cache) {
     path,
     version,
     headers,
-    query: queryParams,
-    cookies,
-    params :undefined,
   };
-  if (method === "GET") {
-    cache.setCache(cacheKey, res);
-  }
+  // if (method === "GET") {
+  //   cache.setCache(cacheKey, res);
+  // }
   return res;
 }
 
