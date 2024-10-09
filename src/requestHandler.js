@@ -13,9 +13,9 @@ module.exports = async function handleRequest(socket,request,maya) {
 
   // Parsing the request
   const { method, path } = request;
-  const [routerPath, queryString] = (path || "").split("?");
-  const query = new URLSearchParams(queryString || "");
-  request.query = Object.fromEntries(query.entries());
+  // const [routerPath, queryString] = (path || "").split("?");
+  // const query = new URLSearchParams(queryString || "");
+  // request.query = Object.fromEntries(query.entries());
 
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
@@ -31,20 +31,21 @@ module.exports = async function handleRequest(socket,request,maya) {
   await executeMiddleware(midllewares,context,socket);
 
   // find the Handler based on req path
-  const routeHandler = maya.trie.search(routerPath, method);
-  if (!routerPath || !routeHandler || !routeHandler.handler) {
-    return sendError(socket,ErrorHandler.RouteNotFoundError())
+  const routeHandler = maya.trie.search(path.split("?")[0], method);
+  if (!routeHandler || !routeHandler.handler) {
+    return sendError(socket,ErrorHandler.RouteNotFoundError(routeHandler?.path ?? 'path'))
   }
 
   if (routeHandler?.method !== method) {
     return sendError(socket, ErrorHandler.methodNotAllowedError());
   }
 
-  const dynamicParams = routeHandler.isDynamic 
-  ? extractDynamicParams(routeHandler.path,path)
-  : {}
-  request.params = dynamicParams 
-
+  // we storing routePatter here so if user call context.getParams()
+  // we will just req.routePattern and request.path and call extractParams()
+  // so by doing this we will avoid parsing params. only when user calll
+  if (routeHandler.isDynamic) {
+    request.routePattern = routeHandler.path
+  }
   // if we found handler then call the handler(means controller)
     try {
      const result = await routeHandler.handler(context)
@@ -78,33 +79,6 @@ function handleResponse(socket,result) {
   }
 }
 
-
-// if user made dynamic rooute -> /route/:id then extract it
-const extractDynamicParams = (routePattern, path) => {
-  const cacheKey = `${routePattern}-${path}`
-
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey)
-  }
-
-  const object = {};
-  const routeSegments = routePattern.split("/");
-  const [pathWithoutQuery] = path.split("?"); // Ignore the query string in the path
-  const pathSegments = pathWithoutQuery.split("/"); // Re-split after removing query
-
-  if (routeSegments.length !== pathSegments.length) {
-    return null; // Path doesn't match the pattern
-  }
-
-  routeSegments.forEach((segment, index) => {
-    if (segment.startsWith(":")) {
-      const dynamicKey = segment.slice(1); // Remove ':' to get the key name
-      object[dynamicKey] = pathSegments[index]; // Map the path segment to the key
-    }
-  });
-  cache.set(cacheKey,object)
-  return object;
-};
 
 // we are applying cors here
 // needs to work here more
@@ -151,10 +125,10 @@ async function executeMiddleware(middlewares,context,socket) {
     try {
       const result = await Promise.resolve(middleware(context, socket));
       if (result || !socket.writable) {
-        break;
+        return;
       }
     } catch (error) {
-      console.error("Middleware error:", error);
+      // console.error("Middleware error:", error);
       sendError(socket,ErrorHandler.internalServerError(error))
       break; 
     }

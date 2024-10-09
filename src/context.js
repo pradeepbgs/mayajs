@@ -8,7 +8,11 @@ const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 const cache = new Map();
 
-module.exports = function createContext(socket,request,staticFileServeLocation) {
+module.exports = function createContext(
+  socket,
+  request,
+  staticFileServeLocation
+) {
   const headers = {};
   function _generateResponse(
     data,
@@ -20,11 +24,9 @@ module.exports = function createContext(socket,request,staticFileServeLocation) 
     const cacheKey = `${statusCode}-${contentType}-${data}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      if (socket.writable) {
-        socket.write(cached.response);
-        socket.end();
-        return true;
-      }
+      socket.write(cached.response);
+      socket.end();
+      return true;
     }
 
     let response = `HTTP/1.1 ${statusCode} ${statusMessage}\r\n`;
@@ -59,16 +61,18 @@ module.exports = function createContext(socket,request,staticFileServeLocation) 
     }
     cache.set(cacheKey, { response, timestamp: timeStamp });
 
-    if (socket.writable) {
-      socket.write(response);
-      socket.end();
-      return;
-    }
+    socket.write(response);
+    socket.end();
+    return true;
   }
+
   return {
     req: request,
     settedValue: {},
     isAuthenticated: false,
+    _parsedCookie:null,
+    _parsedQuery : null,
+    _parsedParams:null,
     next: () => {},
     //
     setHeader(key, value) {
@@ -83,11 +87,11 @@ module.exports = function createContext(socket,request,staticFileServeLocation) 
       return this.settedValue[key];
     },
 
-    setAuth(isAuthenticated) {
+    setAuthentication(isAuthenticated) {
       this.isAuthenticated = isAuthenticated;
     },
 
-    getAuth() {
+    checkAuthentication() {
       return this.isAuthenticated;
     },
 
@@ -119,30 +123,18 @@ module.exports = function createContext(socket,request,staticFileServeLocation) 
     },
 
     async html(filename, statusCode = 200) {
-      const extname = path.extname(filename);
       const RealPath = path.join(staticFileServeLocation, filename);
-
-      if (extname === ".html") {
         try {
           const file = await fs.promises.readFile(RealPath, "utf-8");
           return _generateResponse(file, statusCode);
         } catch (error) {
           return _generateResponse(
-            "Internal Server Error",
+            "Internal Server Error while rendering file",
             500,
             "Internal Server Error"
           );
         }
-      }
-      // Handle unsupported file types
-      else {
-        return _generateResponse(
-          "Unsupported file type, give HTML",
-          415,
-          "Unsupported Media Type"
-        );
-      }
-    },
+      },
 
     async render(
       templatePath,
@@ -183,7 +175,7 @@ module.exports = function createContext(socket,request,staticFileServeLocation) 
 
     redirect(url, statusCode = 302) {
       this.setHeader("Location", url);
-      return _generateResponse("", statusCode, "Found", "text/plain")
+      return _generateResponse("", statusCode, "Found", "text/plain");
     },
 
     cookie(name, value, options = {}) {
@@ -198,7 +190,7 @@ module.exports = function createContext(socket,request,staticFileServeLocation) 
       let cookie = `${name}=${value}`;
 
       if (options.expires) {
-        cookie += ` Expires=${options.expires.toUTCString()};`
+        cookie += ` Expires=${options.expires.toUTCString()};`;
       }
 
       if (options.maxAge) {
@@ -241,25 +233,64 @@ module.exports = function createContext(socket,request,staticFileServeLocation) 
     },
 
     getCookie(cookieName) {
-      if (cookieName) {
-        return this.req.cookies[cookieName] || null;
+      if (!this._parsedCookie) {
+        this._parsedCookie = parseCookie(request.headers['cookie'])
       }
-
-      return this.req.cookies || null;
+      return cookieName ? this._parsedCookie[cookieName] : this._parsedCookie;
     },
 
     getQuery(queryKey) {
-      if (queryKey) {
-        return this.req.query[queryKey] || null;
+      if (!this._parsedQuery) {
+        const queryString = request.path.split("?")[1] || "";
+        this._parsedQuery = new URLSearchParams(queryString);
       }
-      return this.req.query;
+      return queryKey ? this._parsedQuery[queryKey] || null : this._parsedQuery;
     },
 
     getParams(paramsName) {
-      if (paramsName) {
-        return this.req.params[paramsName] || null;
+      if (!this._parsedParams) {
+        this._parsedParams = extractDynamicParams(request.routePattern,request.path)
       }
-      return this.req.params;
-    }
-  }
+      return paramsName ? this._parsedParams[paramsName] || null : this._parsedParams;
+    },
+  };
+};
+
+function parseCookie(header){
+  const cookies = {}
+  if (!header) return cookies;
+
+  const cookieArray = header.split(";")
+  cookieArray.forEach(cookie =>{
+    const [cookieName,cookievalue] = cookie.trim().split("=")
+    cookies[cookieName] = cookievalue.split(" ")[0]
+  })
+  return cookies;
 }
+
+
+const extractDynamicParams = (routePattern, path) => {
+  const cacheKey = `${routePattern}-${path}`
+
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey)
+  }
+
+  const object = {};
+  const routeSegments = routePattern.split("/");
+  const [pathWithoutQuery] = path.split("?"); // Ignore the query string in the path
+  const pathSegments = pathWithoutQuery.split("/"); // Re-split after removing query
+
+  if (routeSegments.length !== pathSegments.length) {
+    return null; // Path doesn't match the pattern
+  }
+
+  routeSegments.forEach((segment, index) => {
+    if (segment.startsWith(":")) {
+      const dynamicKey = segment.slice(1); // Remove ':' to get the key name
+      object[dynamicKey] = pathSegments[index]; // Map the path segment to the key
+    }
+  });
+  cache.set(cacheKey,object)
+  return object;
+};
