@@ -22,13 +22,13 @@ module.exports = async function handleRequest(socket,request,maya) {
     await applyCors(request, context, maya.corsConfig);
   }
 
-  // execute midlleware here
-  const midllewares = [
-    ...(maya.globalMidlleware || []),
-    ...(maya.midllewares.get(request.path) || [])
-  ]
-
-  await executeMiddleware(midllewares,context,socket);
+  if (maya.hasMiddleware) {
+    const midllewares = [
+      ...(maya.globalMidlleware || []),
+      ...(maya.midllewares.get(request.path) || [])
+    ]
+    await executeMiddleware(midllewares,context,socket);
+  }
 
   // find the Handler based on req path
   const routeHandler = maya.trie.search(path.split("?")[0], method);

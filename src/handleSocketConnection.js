@@ -37,8 +37,8 @@ module.exports = async function handleConnection(socket, maya) {
   });
 
   socket.on("error", (e) => {
-    console.log("error on socket: ", e);
-    socket.end()
+    // console.log("error on socket: ", e);
+    // socket.end()
   });
 
 
