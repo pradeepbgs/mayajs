@@ -47,6 +47,48 @@ class Maya {
     this.staticFileServeLocation = null;
     this.trie = new Trie();
     this.hasMiddleware = false
+    this.hasOnReqHook=false;
+    this.hasPreHandlerHook=false;
+    this.hasPostHandlerHook=false;
+    this.hasOnSendHook=false;
+    this.hooks = {
+      onRequest: [],
+      preHandler: [],
+      postHandler: [],
+      onSend: [],
+      onError: [],
+      onClose: []
+    }
+  }
+
+
+
+  addHooks(typeOfHook,fnc){
+    if (this.hooks[typeOfHook]) {
+      this.hooks[typeOfHook].push(fnc)
+    }else{
+      throw new Error(`Unknown hook type: ${type}`);
+    }
+  }
+
+  compile() {
+    if (this.globalMidlleware.length > 0) {
+      this.hasMiddleware = true;
+    }
+    for (const [path, middlewares] of this.midllewares.entries()) {
+      if (middlewares.length > 0) {
+        this.hasMiddleware = true;
+        break;
+      }
+    } 
+
+    // check if hook is present or not
+
+    if (this.hooks.onRequest.length>0) this.hasOnReqHook=true;
+    if(this.hooks.preHandler.length>0) this.hasPreHandlerHook=true;
+    if(this.hooks.postHandler.length>0) this.hasPostHandlerHook=true;
+    if(this.hooks.onSend.length>0) this.hasOnSendHook=true;
+    
   }
 
   async useHttps(options = {}) {
@@ -66,26 +108,13 @@ class Maya {
     }
   }
 
-  compile(){
-    if (this.globalMidlleware.length > 0) {
-      this.hasMiddleware=true
-    }
-
-    for (const [path,middlewares] of this.midllewares.entries()){
-      if (middlewares.length>0) {
-        this.hasMiddleware=true
-        break;
-      }
-    }    
-  }
-
   #createServer(handleConnection) {
     return this.sslOptions
-      ? tls.createServer(this.sslOptions, (socket) =>
-          handleConnection(socket, this)
+      ? tls.createServer(this.sslOptions, async (socket) =>
+          await handleConnection(socket, this)
         )
-      : net.createServer((socket) => {
-        handleConnection(socket, this)
+      : net.createServer(async (socket) => {
+        await handleConnection(socket, this)
       });
   }
 

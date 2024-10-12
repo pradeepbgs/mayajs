@@ -9,7 +9,6 @@ const MAX_CACHE_SIZE = 100;
 const cache = new Map();
 
 module.exports = function createContext(
-  socket,
   request,
   staticFileServeLocation
 ) {
@@ -24,9 +23,7 @@ module.exports = function createContext(
     const cacheKey = `${statusCode}-${contentType}-${data}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      socket.write(cached.response);
-      socket.end();
-      return true;
+      return cached.response;
     }
 
     let response = `HTTP/1.1 ${statusCode} ${statusMessage}\r\n`;
@@ -60,10 +57,7 @@ module.exports = function createContext(
       cache.delete(oldestKey);
     }
     cache.set(cacheKey, { response, timestamp: timeStamp });
-
-    socket.write(response);
-    socket.end();
-    return true;
+    return response;
   }
 
   return {
@@ -123,18 +117,30 @@ module.exports = function createContext(
     },
 
     async html(filename, statusCode = 200) {
+      const extname = path.extname(filename);
       const RealPath = path.join(staticFileServeLocation, filename);
+
+      if (extname === ".html") {
         try {
           const file = await fs.promises.readFile(RealPath, "utf-8");
           return _generateResponse(file, statusCode);
         } catch (error) {
           return _generateResponse(
-            "Internal Server Error while rendering file",
+            "Internal Server Error",
             500,
             "Internal Server Error"
           );
         }
-      },
+      }
+      // Handle unsupported file types
+      else {
+        return _generateResponse(
+          "Unsupported file type, give HTML",
+          415,
+          "Unsupported Media Type"
+        );
+      }
+    },
 
     async render(
       templatePath,
@@ -270,6 +276,7 @@ function parseCookie(header){
 
 
 const extractDynamicParams = (routePattern, path) => {
+  if(!routePattern) return {};
   const cacheKey = `${routePattern}-${path}`
 
   if (cache.has(cacheKey)) {
@@ -277,7 +284,7 @@ const extractDynamicParams = (routePattern, path) => {
   }
 
   const object = {};
-  const routeSegments = routePattern.split("/");
+  const routeSegments = routePattern?.split("/");
   const [pathWithoutQuery] = path.split("?"); // Ignore the query string in the path
   const pathSegments = pathWithoutQuery.split("/"); // Re-split after removing query
 
