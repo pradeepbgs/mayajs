@@ -5,10 +5,10 @@ const MAX_CACHE_SIZE = 100;
 
 const cache = new Map();
 class ResponseHandler{
-  constructor(socket,staticFileServeLocation) {
+  constructor(staticFileServeLocation) {
     this.headers = {};
     // this.cache = new Map();
-    this.socket = socket;
+    // this.socket = socket;
     this.staticFileLocation = staticFileServeLocation
   }
 
@@ -21,11 +21,12 @@ class ResponseHandler{
     const cacheKey = `${statusCode}-${contentType}-${data}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      if(this.socket.writable){
-        this.socket.write(cached.response)
-        this.socket.end();
-        return;
-       }
+      // if(this.socket.writable){
+      //   // this.socket.write(cached.response)
+      //   // this.socket.end();
+      //   return;
+      //  }
+       return cached.response
     }
 
     let response = `HTTP/1.1 ${statusCode} ${statusMessage}\r\n`;
@@ -60,11 +61,12 @@ class ResponseHandler{
     }
     cache.set(cacheKey, { response, timestamp: timeStamp });
 
-      if(this.socket.writable){
-      this.socket.write(response)
-      this.socket.end();
-      return;
-     }
+    return response;
+    //   if(this.socket.writable){
+    //   this.socket.write(response)
+    //   this.socket.end();
+    //   return;
+    //  }
   }
 
   json(data, statusCode = 200, statusMessage = "OK", contentType = "application/json") {

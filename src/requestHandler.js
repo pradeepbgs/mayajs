@@ -3,40 +3,51 @@ const createContext = require('./context.js');
 
 const cache = new Map()
 
-module.exports = async function handleRequest(socket,request,maya) {
+module.exports = async function handleRequest(request,maya) {
   if (request?.path === "/favicon.ico") {
-    socket.end();  
     return;
   }
 
-  const context = createContext(socket,request)
+  const context = createContext(request)
 
-  // Parsing the request
-  const { method, path } = request;
-  // const [routerPath, queryString] = (path || "").split("?");
-  // const query = new URLSearchParams(queryString || "");
-  // request.query = Object.fromEntries(query.entries());
+  // OnReq hook 1
+  if (maya.hasOnReqHook) {
+    for (const hook of maya.hooks.onRequest) {
+      await hook(context);
+    }
+  }
 
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
-    await applyCors(request, context, maya.corsConfig);
+   const corsResult = await applyCors(request, context, maya.corsConfig);
+   if(corsResult) return corsResult;
   }
 
-  // execute midlleware here
-  const midllewares = [
-    ...(maya.globalMidlleware || []),
-    ...(maya.midllewares.get(request.path) || [])
-  ]
 
-  await executeMiddleware(midllewares,context,socket);
+  if (maya.hasMiddleware) {
+    const midllewares = [
+      ...(maya.globalMidlleware || []),
+      ...(maya.midllewares.get(request.path) || [])
+    ]
+    const middlewareResult = await executeMiddleware(midllewares,context);
+    if(middlewareResult) return middlewareResult;
+  }
+
+  // Run preHandler hooks 2
+  if (maya.hasPreHandlerHook) {
+    for (const hook of maya.hooks.preHandler) {
+      const res = await hook(context);
+      if(res) return;
+    }
+  }
 
   // find the Handler based on req path
-  const routeHandler = maya.trie.search(path.split("?")[0], method);
+  const routeHandler = maya.trie.search(request.path.split("?")[0], request.method);
   if (!routeHandler || !routeHandler.handler) {
     return sendError(socket,ErrorHandler.RouteNotFoundError(routeHandler?.path ?? 'path'))
   }
 
-  if (routeHandler?.method !== method) {
+  if (routeHandler?.method !== request.method) {
     return sendError(socket, ErrorHandler.methodNotAllowedError());
   }
 
@@ -46,38 +57,51 @@ module.exports = async function handleRequest(socket,request,maya) {
   if (routeHandler.isDynamic) {
     request.routePattern = routeHandler.path
   }
+
   // if we found handler then call the handler(means controller)
     try {
      const result = await routeHandler.handler(context)
 
-      if(result) return handleResponse(socket,result);
+     // 3. run the postHandler hooks 
+    if (maya.hasPostHandlerHook) {
+      for (const hook of maya.hooks.postHandler) {
+        await hook(context);
+      }
+    }
+
+    // 4. Run onSend hooks before sending the response
+    if (maya.hasOnSendHook) {
+      for (const hook of maya.hooks.onSend) {
+        const res = await hook(result, context);
+        if(res) return;
+      }
+    }
+
+      if(result) return result;
+
     } catch (error) {
       console.error("Error in handler:", error);
-      return sendError(socket, 
-        ErrorHandler.internalServerError(`Error in handler at ${request.path}: ${error.message}\nStack Trace: ${error.stack}`));
+      return ErrorHandler.internalServerError(`Error in handler at ${request.path}: ${error.message}\nStack Trace: ${error.stack}`)
     }
 };
 
 
-function handleResponse(socket,result) {
-  if (typeof result === 'string') {
-    let res =`HTTP/1.1 200 ok\r\n`;
-    res += `Content-Type: text/plain\r\n`; 
-    res += "\r\n";
-    res += result
-    socket.write(res)
-    socket.end()
-    return;
-  } else if (typeof result === 'object') {
-    let res =`HTTP/1.1 200 ok\r\n`;
-    res += `Content-Type: application/json\r\n`; 
-    res += "\r\n";
-    res += JSON.stringify(result)
-    socket.write(res)
-    socket.end()
-    return
-  }
-}
+// function handleResponse(result) {
+//   if (typeof result === 'string') {
+//     let res =`HTTP/1.1 200 ok\r\n`;
+//     res += `Content-Type: text/plain\r\n`; 
+//     res += "\r\n";
+//     res += result;
+//     return res;
+//   } else if (typeof result === 'object') {
+//     let res =`HTTP/1.1 200 ok\r\n`;
+//     res += `Content-Type: application/json\r\n`; 
+//     res += "\r\n";
+//     res += JSON.stringify(result);
+//     return res;
+//   }
+//   return result;
+// }
 
 
 // we are applying cors here
@@ -123,7 +147,12 @@ async function executeMiddleware(middlewares,context,socket) {
   for (let i = 0; i < middlewares.length; i++) {
     const middleware = middlewares[i];
     try {
+      // our resHandler is designed to socket.write the res itself
+        // but if any midl gives res so we need to break the code that why 
+        // in resHandler class we are returning true in res so 
+        // if midl socket has wrote the res then return from here
       const result = await Promise.resolve(middleware(context, socket));
+        // here in res we will get true
       if (result || !socket.writable) {
         return;
       }

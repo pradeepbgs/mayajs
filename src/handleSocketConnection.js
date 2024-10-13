@@ -28,17 +28,16 @@ module.exports = async function handleConnection(socket, maya) {
   socket.on("data", async (chunk) => {
     // const startTime = Date.now();
     buffer = Buffer.concat([buffer, chunk]);
-    processBuffer()
+    await processBuffer()
   });
 
   socket.on('close', () => {
-    // console.log('Socket has been closed.');
     socket.end()
   });
 
   socket.on("error", (e) => {
-    console.log("error on socket: ", e);
-    socket.end()
+    // console.log("error on socket: ", e);
+    // socket.end()
   });
 
 
@@ -48,7 +47,7 @@ module.exports = async function handleConnection(socket, maya) {
       if (headerEndIndex !== -1) {
   
         const headerPart = buffer.slice(0, headerEndIndex + 4);
-        parsedHeader = parseRequestHeader(headerPart,cache);
+        parsedHeader = await parseRequestHeader(headerPart,cache);
 
         if (parsedHeader?.error) {
           return parsedRequestError(socket, parsedHeader.error);
@@ -59,7 +58,11 @@ module.exports = async function handleConnection(socket, maya) {
 
         if (parsedHeader.method === "GET" || (contentLength <=0)) {
           // call the reqHandler because we dont need to parse body
-          handleRequest(socket, parsedHeader, maya);
+        const result = await handleRequest(parsedHeader, maya);
+        if (result) {
+          socket.write(result)
+          socket.end();
+        }
           parsedHeader=null;
           return;
         }
@@ -76,11 +79,14 @@ module.exports = async function handleConnection(socket, maya) {
         }
 
         const finalResult = {...parsedHeader, ...parsedBody};
-        handleRequest(socket, finalResult, maya);
-
+        const result = await handleRequest(finalResult, maya);
+        if (result) {
+          socket.write(result)
+          socket.end();
+        }
         buffer = buffer.slice(contentLength)
         parsedHeader=null;
-        
+        return;
       }
     }
   }
