@@ -15,7 +15,13 @@ Install MayaJS via npm:
 
 ```bash
 npm install mayajs
+```
 
+### Example Code
+
+Here's an example of how to use MayaJS:
+
+```javascript
 import Maya from "mayajs";
 import { hello } from "./hello.js";
 
@@ -64,5 +70,4 @@ maya.get("/hello/:id").handler((xl) => {
 maya.listen(port, () => {
   console.log(`MayaJS server is running on port ${port}`);
 });
-
-
+```
