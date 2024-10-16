@@ -60,6 +60,8 @@ module.exports = function createContext(
     return response;
   }
 
+    let responseStatus = 200
+
   return {
     req: request,
     settedValue: {},
@@ -69,12 +71,20 @@ module.exports = function createContext(
     _parsedParams:null,
     next: () => {},
     //
+
+    status(statusCode){
+      responseStatus=statusCode
+      return this;
+    },
+
     setHeader(key, value) {
       headers[key] = value;
+      return this
     },
 
     set(key, value) {
       this.settedValue[key] = value;
+      return this
     },
 
     get(key) {
@@ -83,17 +93,18 @@ module.exports = function createContext(
 
     setAuthentication(isAuthenticated) {
       this.isAuthenticated = isAuthenticated;
+      return this;
     },
 
     checkAuthentication() {
       return this.isAuthenticated;
     },
 
-    json(data, statusCode = 200) {
+    json(data, statusCode) {
       try {
         return _generateResponse(
           JSON.stringify(data || {}),
-          statusCode,
+          statusCode = statusCode ?? responseStatus,
           "ok",
           "application/json"
         );
@@ -108,22 +119,22 @@ module.exports = function createContext(
       }
     },
 
-    send(data, statusCode = 200) {
-      return _generateResponse(data, statusCode);
+    send(data, statusCode) {
+      return _generateResponse(data, statusCode = statusCode ?? responseStatus,);
     },
 
-    text(data, statusCode = 200) {
-      return _generateResponse(data, statusCode);
+    text(data, statusCode) {
+      return _generateResponse(data, statusCode = statusCode ?? responseStatus,);
     },
 
-    async html(filename, statusCode = 200) {
+    async html(filename, statusCode) {
       const extname = path.extname(filename);
       const RealPath = path.join(staticFileServeLocation, filename);
 
       if (extname === ".html") {
         try {
           const file = await fs.promises.readFile(RealPath, "utf-8");
-          return _generateResponse(file, statusCode);
+          return _generateResponse(file, statusCode = statusCode ?? responseStatus);
         } catch (error) {
           return _generateResponse(
             "Internal Server Error",
@@ -145,7 +156,7 @@ module.exports = function createContext(
     async render(
       templatePath,
       data = {},
-      statusCode = 200,
+      statusCode,
       statusMessage = "OK",
       contentType = "text/html"
     ) {
@@ -157,7 +168,7 @@ module.exports = function createContext(
           const file = await fs.promises.readFile(RealPath, "utf-8");
           return _generateResponse(
             file,
-            statusCode,
+            statusCode = statusCode ?? responseStatus,
             statusMessage,
             contentType
           );
@@ -179,9 +190,9 @@ module.exports = function createContext(
       }
     },
 
-    redirect(url, statusCode = 302) {
+    redirect(url, statusCode) {
       this.setHeader("Location", url);
-      return _generateResponse("", statusCode, "Found", "text/plain");
+      return _generateResponse("", statusCode = statusCode ?? responseStatus, "Found", "text/plain");
     },
 
     cookie(name, value, options = {}) {
@@ -242,7 +253,7 @@ module.exports = function createContext(
       if (!this._parsedCookie) {
         this._parsedCookie = parseCookie(request.headers['cookie'])
       }
-      return cookieName ? this._parsedCookie[cookieName] : this._parsedCookie;
+      return cookieName ? this._parsedCookie[cookieName] || null : this._parsedCookie;
     },
 
     getQuery(queryKey) {
