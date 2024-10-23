@@ -6,7 +6,7 @@ const Trie = require("./trie.js");
 
 const rateLimit = (props) => {
   if (!props) {
-    throw new Error("pls provide windowMs , max , message as a props")
+    throw new Error("pls provide windowMs , max , message as a props");
   }
   const { time: windowMs, max, message } = props;
   const requests = new Map();
@@ -59,6 +59,39 @@ class Maya {
       onSend: null,
       onError: null,
       onClose: null,
+    };
+    this.filters = [];
+    this.filterFunction = null;
+    this.FilterRoutes = [];
+    this.hasFilterEnabled = false;
+  }
+
+  filter(truOrFalse) {
+    if (truOrFalse) {
+      this.hasFilterEnabled = true;
+    } else if (truOrFalse === false){
+      this.hasFilterEnabled = false
+    } else {
+      this.hasFilterEnabled = true
+    }
+    return {
+      routeMatcher: (...routes) => {
+        this.FilterRoutes = routes.sort();
+        return this.filter();
+      },
+
+      permitAll: () => {
+        for (const route of this?.FilterRoutes) {
+          this.filters.push(route);
+        }
+        return this.filter();
+      },
+
+      require: (fnc) => {
+        if (fnc) {
+          this.filterFunction = fnc;
+        }
+      },
     };
   }
 
@@ -135,8 +168,9 @@ class Maya {
 
     if (!server) {
       console.error("error while creating server");
+      
     }
-
+ 
     server.listen(port, () => {
       if (typeof callback === "function") return callback();
       console.log(
@@ -208,7 +242,7 @@ class Maya {
     handlerInstance.trie = new Trie();
   }
 
-  #defineRoute(method, path) {
+  addRoute(method, path) {
     if (typeof path !== "string") {
       throw new Error("Path must be a string type");
     }
@@ -239,7 +273,7 @@ class Maya {
     return chain;
   }
 
-  #addMiddlewareAndHandler(method, path, handlers) {
+  addMiddlewareAndHandler(method, path, handlers) {
     if (typeof path !== "string") {
       throw new Error("Path must be a string type");
     }
@@ -267,37 +301,37 @@ class Maya {
 
   get(path, ...handlers) {
     if (handlers.length > 0) {
-      return this.#addMiddlewareAndHandler("GET", path, handlers);
+      return this.addMiddlewareAndHandler("GET", path, handlers);
     }
-    return this.#defineRoute("GET", path);
+    return this.addRoute("GET", path);
   }
 
   post(path, ...handlers) {
     if (handlers.length > 0) {
-      return this.#addMiddlewareAndHandler("POST", path, handlers);
+      return this.addMiddlewareAndHandler("POST", path, handlers);
     }
-    return this.#defineRoute("POST", path);
+    return this.addRoute("POST", path);
   }
 
   put(path, ...handlers) {
     if (handlers.length > 0) {
-      return this.#addMiddlewareAndHandler("PUT", path, handlers);
+      return this.addMiddlewareAndHandler("PUT", path, handlers);
     }
-    return this.#defineRoute("PUT", path);
+    return this.addRoute("PUT", path);
   }
 
   patch(path, ...handlers) {
     if (handlers.length > 0) {
-      return this.#addMiddlewareAndHandler("PATCH", path, handlers);
+      return this.addMiddlewareAndHandler("PATCH", path, handlers);
     }
-    return this.#defineRoute("PATCH", path);
+    return this.addRoute("PATCH", path);
   }
 
   delete(path, ...handlers) {
     if (handlers.length > 0) {
-      return this.#addMiddlewareAndHandler("DELETE", path, handlers);
+      return this.addMiddlewareAndHandler("DELETE", path, handlers);
     }
-    return this.#defineRoute("DELETE", path);
+    return this.addRoute("DELETE", path);
   }
 }
 

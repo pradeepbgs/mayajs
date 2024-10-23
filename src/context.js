@@ -77,6 +77,10 @@ module.exports = function createContext(
       return this;
     },
 
+    body(){
+      return  request.body ?? {}
+    },
+
     setHeader(key, value) {
       headers[key] = value;
       return this

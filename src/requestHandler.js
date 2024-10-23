@@ -1,7 +1,7 @@
 const ErrorHandler = require("./errResponse.js");
 const createContext = require("./context.js");
 
-const cache = new Map();
+// const cache = new Map();
 
 module.exports = async function handleRequest(request, maya) {
   if (request?.path === "/favicon.ico") {
@@ -10,16 +10,47 @@ module.exports = async function handleRequest(request, maya) {
 
   const context = createContext(request);
 
-  // OnReq hook 1
-  if (maya.hasOnReqHook) {
-    await maya.hooks.onRequest(context);
+  // find the Handler based on req path
+  const routeHandler = maya.trie.search(
+    request.path.split("?")[0],
+    request.method
+  );
+  if (!routeHandler || routeHandler?.method !== request.method) {
+    return routeHandler 
+    ? ErrorHandler.methodNotAllowedError() 
+    : ErrorHandler.RouteNotFoundError(routeHandler?.path ?? "path");
   }
+
+  if (routeHandler.isDynamic) {
+    request.routePattern = routeHandler.path;
+  } 
 
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
     const corsResult = await applyCors(request, context, maya.corsConfig);
     if (corsResult) return corsResult;
   }
+
+  // OnReq hook 1
+  if (maya.hasOnReqHook) {
+    await maya.hooks.onRequest(context);
+  }
+
+  if (maya.hasFilterEnabled) {
+    const path = request.routePattern ??  request.path.split("?")[0]
+    const hasRoute = maya.filters.includes(path)
+    if (hasRoute === false) {
+      if (maya.filterFunction) {
+        const filterResult = await maya?.filterFunction(ctx, server)
+        if (filterResult) return filterResult
+      } else {
+        return context.json({
+          message: "Authentication required"
+        },400)
+      }
+  }
+}
+
 
   if (maya.hasMiddleware) {
     const midllewares = [
@@ -36,22 +67,6 @@ module.exports = async function handleRequest(request, maya) {
     if (Hookresult) return Hookresult;
   }
 
-  // find the Handler based on req path
-  const routeHandler = maya.trie.search(
-    request.path.split("?")[0],
-    request.method
-  );
-  if (!routeHandler || !routeHandler.handler) {
-    return ErrorHandler.RouteNotFoundError(routeHandler?.path ?? "path");
-  }
-
-  if (routeHandler?.method !== request.method) {
-    return ErrorHandler.methodNotAllowedError();
-  }
-
-  if (routeHandler.isDynamic) {
-    request.routePattern = routeHandler.path;
-  }
 
   // if we found handler then call the handler(means controller)
   try {
@@ -110,6 +125,11 @@ const applyCors = (req, ctx, config = {}) => {
   // Set CORS headers
   ctx.setHeader("Access-Control-Allow-Methods", allowedMethods);
   ctx.setHeader("Access-Control-Allow-Headers", allowedHeaders);
+  ctx.setHeader("Access-Control-Allow-Credentials", allowCredentials);
+
+  if (exposeHeaders.length) {
+    ctx.setHeader("Access-Control-Expose-Headers", exposeHeaders);
+  }
 
   if (allowCredentials) {
     ctx.setHeader("Access-Control-Allow-Credentials", "true");
@@ -118,16 +138,30 @@ const applyCors = (req, ctx, config = {}) => {
     ctx.setHeader("Access-Control-Expose-Headers", exposeHeaders.join(", "));
   }
 
-  // Check if the origin is allowed
-  if (!allowedOrigins.includes("*") && !allowedOrigins.includes(origin)) {
-    return ctx.text("CORS not allowed", 403);
+  if (allowedOrigins === '*') {
+    ctx.setHeader("Access-Control-Allow-Origin", "*")
+  } else if (Array.isArray(allowedOrigins)) {
+    if (origin && allowedOrigins.includes(origin)) {
+      ctx.setHeader("Access-Control-Allow-Origin", origin)
+    } else if (allowedOrigins.includes('*')) {
+      ctx.setHeader("Access-Control-Allow-Origin", '*')
+    }
+    else {
+      return ctx.status(403).json({ message: "CORS not allowed" })
+    }
+  } else if (typeof allowedOrigins === 'string') {
+    if (origin === allowedOrigins) {
+      ctx.setHeader("Access-Control-Allow-Origin", origin)
+    }
+    else {
+      return ctx.status(403).json({ message: "CORS not allowed" });
+    }
+  } else {
+    return ctx.status(403).json({ message: "CORS not allowed" })
   }
 
   // Set Access-Control-Allow-Origin
-  ctx.setHeader(
-    "Access-Control-Allow-Origin",
-    allowedOrigins.includes("*") ? "*" : origin
-  );
+  ctx.setHeader("Access-Control-Allow-Origin",origin);
 
   // Handle preflight request
   if (req.method === "OPTIONS") {

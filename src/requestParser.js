@@ -1,6 +1,6 @@
 const parseMultipartFormData  =  require("./multipartFormDataParser.js");
 
-function parseRequestHeader(requestBuffer,cache) {
+async function parseRequestHeader(requestBuffer,cache) {
   const request = requestBuffer.toString();
 
   const headerIndex = request.indexOf("\r\n\r\n");
@@ -24,16 +24,7 @@ function parseRequestHeader(requestBuffer,cache) {
   if (!method || !path || !version) {
     return { error: "Invalid request format: Incomplete request line" }
   }
-  // console.log(headerLine);
-  // const queryParams = path.includes('?') ? path.split('?')[1] : ''; 
-  // const cookies = headers["cookie"] || '';
-  // const cacheKey = `${method}:${path.split('?')[0]}?${queryParams}:${cookies}`;
 
-  // if (method === "GET") {
-  //   console.log('object');
-  //   const cachedResponse = cache.getCached(cacheKey);
-  //   if (cachedResponse) return cachedResponse;
-  // }
 
   // parse headers
   const headers = {};
@@ -60,7 +51,7 @@ function parseRequestHeader(requestBuffer,cache) {
   return res;
 }
 
-function parseRequestBody(bodyBuffer, headers = {}) {
+async function parseRequestBody(bodyBuffer, headers = {}) {
   const body = bodyBuffer.toString();
   let parsedBody;
   let files = {};
