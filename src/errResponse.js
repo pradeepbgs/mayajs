@@ -11,8 +11,8 @@ class ErrorHandler {
     return errResponse(400, "Bad Request", "text/plain", `${err?err:"invalid request format"}`);
   }
 
-  internalServerError() {
-    return errResponse(500, "Internal Server Error", "text/plain", "Internal server error");
+  internalServerError(data) {
+    return errResponse(500, "Internal Server Error", "text/plain", data? data : "Internal server error");
   }
 
   RouteNotFoundError(path) {

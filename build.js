@@ -1,17 +1,18 @@
 // bun.config.js
-export default {
-    entry: [
-      "./src/server.js",
+await Bun.build({
+
+  entrypoints: [
+    "./src/server.js",
       "./src/router.js",
       "./src/trie.js",
-      "./src/responseHandler.js",
+      // "./src/responseHandler.js",
       "./src/requestHandler.js",
       "./src/multipartFormDataParser.js",
       "./src/handleSocketConnection.js",
       "./src/errResponse.js",
       "./src/cache.js"
     ],
-    outDir: "./build",
+    outDir: "./dist",
     minify: true,
-  };
+})
   

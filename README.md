@@ -37,32 +37,30 @@ const { join } = require("path");
 const filePath = join(__dirname, "static");
 
 maya.get("/").handler((xl) => {
-  // like this - return xl.json()
-  // or like this
-  return { msg: "Hello, world!" }
+   return xl.json({ msg: "Hello, world!" },200)
 });
 
 // Render a HTML page
 maya.get("/render").handler(async (xl) => {
-  return await xl.res.render(filePath, "index.html");
+  return await xl.render(filePath, "index.html");
 });
 
 maya.get("/async-test").handler(async (xl) => {
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  return xl.res.json({ message: "Async operation completed" });
+  return xl.json({ message: "Async operation completed" });
 });
 
 maya.get("/error-test").handler((xl) => {
-  return xl.res.send("Hello, error handler!");
+  return xl.send("Hello, error handler!");
 });
 
 maya.get("/redirect").handler((xl) => {
-  return xl.res.redirect("/");
+  return xl.redirect("/");
 });
 
 maya.get("/hello/:id").handler((xl) => {
   const id = xl.req.params.id;
-  return xl.res.json({ msg: "Hello", id });
+  return xl.json({ msg: "Hello", id });
 });
 
 
