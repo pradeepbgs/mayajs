@@ -1,7 +1,3 @@
-// we are encapsulating necessary context such as ParsedRequest,...
-// so we dont have to give ->> await handler(request, responseHandler, () => {})
-// like this we can just ->>> await handleRequest(xl)
-
 const path = require("path");
 const fs = require("fs");
 const CACHE_TTL = 1 * 60 * 1000;
@@ -60,15 +56,15 @@ module.exports = function createContext(
     return response;
   }
 
-    let responseStatus = 200
+  let responseStatus = 200
 
   return {
     req: request,
     settedValue: {},
     isAuthenticated: false,
-    _parsedCookie:null,
-    _parsedQuery : null,
-    _parsedParams:null,
+    _parsedCookie: {},
+    _parsedQuery : {},
+    _parsedParams: {},
     next: () => {},
     //
 

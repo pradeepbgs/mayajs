@@ -8,8 +8,6 @@ module.exports = async function handleRequest(request, maya) {
     return;
   }
 
-  const context = createContext(request);
-
   // find the Handler based on req path
   const routeHandler = maya.trie.search(
     request.path.split("?")[0],
@@ -25,9 +23,11 @@ module.exports = async function handleRequest(request, maya) {
     request.routePattern = routeHandler.path;
   } 
 
+  const context = createContext(request);
+
   // if  cors config is enabled then--->
   if (maya.corsConfig) {
-    const corsResult = await applyCors(request, context, maya.corsConfig);
+    const corsResult = applyCors(request, context, maya.corsConfig);
     if (corsResult) return corsResult;
   }
 
@@ -83,10 +83,8 @@ module.exports = async function handleRequest(request, maya) {
       if (hookResponse) return hookResponse;
     }
 
-    return (
-      result ||
-      ErrorHandler.internalServerError("No Response from this handler")
-    );
+    return result || ErrorHandler.internalServerError("No Response from this handler")
+    
   } catch (error) {
     // console.error("Error in handler:", error);
     return ErrorHandler.internalServerError(
@@ -176,7 +174,7 @@ async function executeMiddleware(middlewares, context, socket) {
   for (let i = 0; i < middlewares.length; i++) {
     const middleware = middlewares[i];
     try {
-      const result = await Promise.resolve(middleware(context, socket));
+      const result = await middleware(context, socket);
       if (result) {
         return result;
       }
