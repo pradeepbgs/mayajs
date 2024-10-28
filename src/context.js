@@ -62,9 +62,9 @@ module.exports = function createContext(
     req: request,
     settedValue: {},
     isAuthenticated: false,
-    _parsedCookie: {},
-    _parsedQuery : {},
-    _parsedParams: {},
+    _parsedCookie: null,
+    _parsedQuery : null,
+    _parsedParams: null,
     next: () => {},
     //
 
@@ -251,7 +251,12 @@ module.exports = function createContext(
 
     getCookie(cookieName) {
       if (!this._parsedCookie) {
-        this._parsedCookie = parseCookie(request.headers['cookie'])
+        const cookieHeaders = request.headers['cookie']
+        if (cookieHeaders) {
+          this._parsedCookie = parseCookie(cookieHeaders)
+        } else {
+          return null
+        }
       }
       return cookieName ? this._parsedCookie[cookieName] || null : this._parsedCookie;
     },
@@ -259,15 +264,20 @@ module.exports = function createContext(
     getQuery(queryKey) {
       if (!this._parsedQuery) {
         const queryString = request.path.split("?")[1] || "";
-        this._parsedQuery = new URLSearchParams(queryString);
+        if (queryString) {
+          const query = new URLSearchParams(queryString);
+          this._parsedQuery = Object.fromEntries(query.entries());
+        } 
+        else return null;
       }
       return queryKey ? this._parsedQuery[queryKey] || null : this._parsedQuery;
     },
 
     getParams(paramsName) {
-      if (!this._parsedParams) {
-        this._parsedParams = extractDynamicParams(request.routePattern,request.path)
+      if (!this._parsedParams && request.routePattern) {
+          this._parsedParams = extractDynamicParams(request.routePattern,request.path)
       }
+      else return null;
       return paramsName ? this._parsedParams[paramsName] || null : this._parsedParams;
     },
   };
@@ -275,12 +285,11 @@ module.exports = function createContext(
 
 function parseCookie(header){
   const cookies = {}
-  if (!header) return cookies;
-
+ 
   const cookieArray = header.split(";")
   cookieArray.forEach(cookie =>{
     const [cookieName,cookievalue] = cookie.trim().split("=")
-    cookies[cookieName] = cookievalue.split(" ")[0]
+    cookies[cookieName?.trim()] = cookievalue?.trim()?.split(" ")[0]
   })
   return cookies;
 }

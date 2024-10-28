@@ -189,3 +189,17 @@ module.exports =  function logResponseTime(startTime) {
   const duration = Date.now() - startTime; // Calculate how much time has passed
   console.log(`Response time: ${duration} ms`); // Log the time in milliseconds
 }
+
+async function executeMiddleware(middlewares, context, socket) {
+  for (let i = 0; i < middlewares.length; i++) {
+    const middleware = middlewares[i];
+    try {
+      const result = await middleware(context, socket);
+      if (result) {
+        return result;
+      }
+    } catch (error) {
+      return ErrorHandler.internalServerError("Error while executing error");
+    }
+  }
+}

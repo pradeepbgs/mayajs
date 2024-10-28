@@ -1,7 +1,6 @@
 const ErrorHandler = require("./errResponse.js");
 const createContext = require("./context.js");
 
-// const cache = new Map();
 
 module.exports = async function handleRequest(request, maya) {
   if (request?.path === "/favicon.ico") {
@@ -41,7 +40,7 @@ module.exports = async function handleRequest(request, maya) {
     const hasRoute = maya.filters.includes(path)
     if (hasRoute === false) {
       if (maya.filterFunction) {
-        const filterResult = await maya?.filterFunction(ctx, server)
+        const filterResult = await maya?.filterFunction(context)
         if (filterResult) return filterResult
       } else {
         return context.json({
@@ -53,17 +52,24 @@ module.exports = async function handleRequest(request, maya) {
 
 
   if (maya.hasMiddleware) {
-    const midllewares = [
-      ...maya.globalMidlleware,
-      ...(maya.midllewares.get(request.path) || []),
-    ];
-    const middlewareResult = await executeMiddleware(midllewares, context);
-    if (middlewareResult) return middlewareResult;
+    // first run global midl
+    const globalMidlleware = maya.globalMidlleware;
+    for (const middleware of globalMidlleware) {
+      const middlewareResult = await middleware(context);
+      if (middlewareResult) return middlewareResult;
+    }
+    // then run path midl
+    const midllewares = maya.midllewares.get(request.path) || [];
+    for (const middleware of midllewares) {
+      const middlewareResult = await middleware(context);
+      if (middlewareResult) return middlewareResult;
+    }
+
   }
 
   // Run preHandler hooks 2
   if (maya.hasPreHandlerHook) {
-    const Hookresult = await diesel.hooks.preHandler(ctx);
+    const Hookresult = await maya.hooks.preHandler(context);
     if (Hookresult) return Hookresult;
   }
 
@@ -74,41 +80,24 @@ module.exports = async function handleRequest(request, maya) {
 
     // 3. run the postHandler hooks
     if (maya.hasPostHandlerHook) {
-      await maya.hooks.postHandler(ctx);
+      await maya.hooks.postHandler(context);
     }
 
     // 4. Run onSend hooks before sending the response
     if (maya.hasOnSendHook) {
-      const hookResponse = await diesel.hooks.onSend(ctx, result);
+      const hookResponse = await diesel.hooks.onSend(context, result);
       if (hookResponse) return hookResponse;
     }
 
-    return result || ErrorHandler.internalServerError("No Response from this handler")
+    return result ?? ErrorHandler.internalServerError("No Response from this handler")
     
   } catch (error) {
-    // console.error("Error in handler:", error);
     return ErrorHandler.internalServerError(
       `Error in handler at ${request.path}: ${error.message}\nStack Trace: ${error.stack}`
     );
   }
 };
 
-// function handleResponse(result) {
-//   if (typeof result === 'string') {
-//     let res =`HTTP/1.1 200 ok\r\n`;
-//     res += `Content-Type: text/plain\r\n`;
-//     res += "\r\n";
-//     res += result;
-//     return res;
-//   } else if (typeof result === 'object') {
-//     let res =`HTTP/1.1 200 ok\r\n`;
-//     res += `Content-Type: application/json\r\n`;
-//     res += "\r\n";
-//     res += JSON.stringify(result);
-//     return res;
-//   }
-//   return result;
-// }
 
 // we are applying cors here
 // needs to work here more
@@ -170,16 +159,4 @@ const applyCors = (req, ctx, config = {}) => {
   return null;
 };
 
-async function executeMiddleware(middlewares, context, socket) {
-  for (let i = 0; i < middlewares.length; i++) {
-    const middleware = middlewares[i];
-    try {
-      const result = await middleware(context, socket);
-      if (result) {
-        return result;
-      }
-    } catch (error) {
-      return ErrorHandler.internalServerError("Error while executing error");
-    }
-  }
-}
+
