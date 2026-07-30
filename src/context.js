@@ -1,5 +1,6 @@
 const path = require("path");
 const fs = require("fs");
+const { parseRequestBody } = require("./requestParser.js");
 const CACHE_TTL = 1 * 60 * 1000;
 const MAX_CACHE_SIZE = 100;
 const cache = new Map();
@@ -65,6 +66,7 @@ module.exports = function createContext(
     _parsedCookie: null,
     _parsedQuery : null,
     _parsedParams: null,
+    _parsedBody: null,
     next: () => {},
     //
 
@@ -73,8 +75,11 @@ module.exports = function createContext(
       return this;
     },
 
-    body(){
-      return  request.body ?? {}
+    async body() {
+      if (!this._parsedBody) {
+        this._parsedBody = await parseRequestBody(request.rawBody ?? Buffer.alloc(0), request.headers);
+      }
+      return this._parsedBody;
     },
 
     setHeader(key, value) {
@@ -267,7 +272,7 @@ module.exports = function createContext(
         if (queryString) {
           const query = new URLSearchParams(queryString);
           this._parsedQuery = Object.fromEntries(query.entries());
-        } 
+        }
         else return null;
       }
       return queryKey ? this._parsedQuery[queryKey] || null : this._parsedQuery;
@@ -285,7 +290,7 @@ module.exports = function createContext(
 
 function parseCookie(header){
   const cookies = {}
- 
+
   const cookieArray = header.split(";")
   cookieArray.forEach(cookie =>{
     const [cookieName,cookievalue] = cookie.trim().split("=")
