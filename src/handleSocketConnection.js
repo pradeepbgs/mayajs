@@ -2,7 +2,7 @@ const handleRequest = require("./requestHandler.js");
 const ErrorHandler = require("./errResponse.js");
 const { Buffer } = require("buffer");
 const Cache = require("./cache.js");
-const { parseRequestBody, parseRequestHeader } = require("./requestParser.js");
+const { parseRequestHeader } = require("./requestParser.js");
 // const { cc } = require("bun:ffi");
 // const { join } = require("path");
 
@@ -25,8 +25,9 @@ const cache = new Cache();
 module.exports = async function handleConnection(socket, maya) {
   let buffer = Buffer.alloc(0);
   let parsedHeader;
+
+  
   socket.on("data", async (chunk) => {
-    // const startTime = Date.now();
     buffer = Buffer.concat([buffer, chunk]);
     await processBuffer();
   });
@@ -76,16 +77,8 @@ module.exports = async function handleConnection(socket, maya) {
     );
     if (buffer.length >= contentLength) {
       const bodyBuffer = buffer.slice(0, contentLength); // Extract the body based on content-length
-      const parsedBody = await parseRequestBody(
-        bodyBuffer,
-        parsedHeader?.headers
-      );
 
-      if (parsedBody?.error) {
-        return parsedRequestError(socket, parsedBody.error);
-      }
-
-      const finalResult = { ...parsedHeader, ...parsedBody };
+      const finalResult = { ...parsedHeader, rawBody: bodyBuffer };
       const result = await handleRequest(finalResult, maya);
       if (result) {
         socket.write(result);
